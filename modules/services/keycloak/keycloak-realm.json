@@ -1,0 +1,77 @@
+{
+  "realm": "main",
+  "enabled": true,
+  "displayName": "MDL",
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "forgejo",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${FORGEJO_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "redirectUris": [ "https://git.lua.li/*" ],
+      "webOrigins": [ "https://git.lua.li" ]
+    },
+    {
+      "clientId": "outline",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${OUTLINE_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "redirectUris": [ "https://docs.lua.li/*" ],
+      "webOrigins": [ "https://docs.lua.li" ]
+    },
+    {
+      "clientId": "kasm",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KASM_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "redirectUris": [ "https://office.lua.li/*" ],
+      "webOrigins": [ "https://office.lua.li" ]
+    },
+    {
+      "clientId": "immich",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${IMMICH_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "redirectUris": [ "https://photos.lua.li/*", "app.immich:///oauth-callback" ],
+      "webOrigins": [ "https://photos.lua.li" ]
+    },
+    {
+      "clientId": "headscale",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${HEADSCALE_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "redirectUris": [ "https://vpn.lua.li/oidc/callback" ],
+      "webOrigins": [ "https://vpn.lua.li" ]
+    },
+    {
+      "clientId": "excalidash",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${EXCALIDASH_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "redirectUris": [ "https://draw.lua.li/*" ],
+      "webOrigins": [ "https://draw.lua.li" ]
+    },
+    {
+      "clientId": "freeipa",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${FREEIPA_CLIENT_SECRET}",
+      "standardFlowEnabled": false,
+      "attributes": { "oauth2.device.authorization.grant.enabled": "true" }
+    }
+  ]
+}

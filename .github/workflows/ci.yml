@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      # Fast gate: evaluate every host (catches module/option errors) without
+      # building full closures. Flip on the build step below once you have a
+      # binary cache (Cachix/Attic) so CI stays quick.
+      - name: Evaluate all hosts
+        run: |
+          for h in desktop desktop-gnome desktop-kde mdl-server proxmox-server; do
+            echo "::group::eval $h"
+            nix eval ".#nixosConfigurations.$h.config.system.build.toplevel.drvPath"
+            echo "::endgroup::"
+          done
+
+      - name: flake check (eval only)
+        run: nix flake check --no-build
+
+      - name: formatting (advisory — repo uses aligned style, not nixfmt)
+        continue-on-error: true
+        run: nix fmt -- --check .
+
+      # - name: Build all hosts (needs a cache to be fast)
+      #   run: |
+      #     for h in mdl-server desktop; do
+      #       nix build ".#nixosConfigurations.$h.config.system.build.toplevel" --no-link
+      #     done
