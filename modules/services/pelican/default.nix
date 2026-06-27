@@ -28,7 +28,7 @@ in {
         # Behind Pangolin (TLS terminated upstream) — the panel entrypoint checks
         # BEHIND_PROXY to skip its own Let's Encrypt and serve plain HTTP.
         BEHIND_PROXY = "true";
-        TRUSTED_PROXIES = "*";
+        TRUSTED_PROXIES = "0.0.0.0/0";   # Caddy needs a CIDR, not "*" (only Pangolin reaches the localhost-bound panel)
       };
       volumes = [
         "/srv/pelican/data:/pelican-data"
