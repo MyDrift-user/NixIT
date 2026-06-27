@@ -41,7 +41,11 @@ in {
     keycloak = {
       image = "quay.io/keycloak/keycloak:26.0";
       dependsOn = [ "keycloak-db" ];
-      cmd = [ "start" "--import-realm" ];
+      # Build the optimized image once, then exec the server. The stock image's
+      # auto-build-on-`start` was looping (build → exit → systemd restart, 100s of
+      # times) and never serving; `build && exec start --optimized` keeps the
+      # server process as PID 1 so it stays up.
+      cmd = [ "sh" "-c" "/opt/keycloak/bin/kc.sh build && exec /opt/keycloak/bin/kc.sh start --optimized --import-realm" ];
       environment = {
         KC_DB             = "postgres";
         KC_DB_URL_HOST    = "keycloak-db";
