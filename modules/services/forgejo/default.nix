@@ -16,7 +16,15 @@ in {
         HTTP_ADDR = "0.0.0.0";
         HTTP_PORT = 3000;
       };
-      service.DISABLE_REGISTRATION = true;   # accounts come via Keycloak (OIDC), not self-signup
+      service = {
+        DISABLE_REGISTRATION = false;             # local signup blocked by the next line; OAuth allowed
+        ALLOW_ONLY_EXTERNAL_REGISTRATION = true;  # accounts come via Keycloak (OIDC) only, no local form
+      };
+      oauth2_client = {
+        ENABLE_AUTO_REGISTRATION = true;          # auto-create the Forgejo user on first OIDC login
+        ACCOUNT_LINKING = "auto";                 # link to an existing account by email
+        USERNAME = "preferred_username";
+      };
       session.COOKIE_SECURE = true;
       "repository".DEFAULT_PRIVATE = "private";
     };

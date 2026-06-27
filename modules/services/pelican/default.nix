@@ -55,9 +55,9 @@ in {
   };
 
   systemd.tmpfiles.rules = [
-    "d /srv/pelican 0750 root root -"
-    "d /srv/pelican/data 0750 root root -"
-    "d /srv/pelican/logs 0750 root root -"
+    "d /srv/pelican 0755 root root -"
+    "d /srv/pelican/data 0777 root root -"
+    "d /srv/pelican/logs 0777 root root -"
     "d /etc/pelican 0750 root root -"
     "d /var/lib/pelican 0750 root root -"
     "d /var/log/pelican 0750 root root -"

@@ -33,14 +33,16 @@ in {
         DATABASE_URL = "file:/app/prisma/dev.db";
         NODE_ENV = "production";
         TRUST_PROXY = "true";                 # behind Pangolin
-        AUTH_MODE = "oidc";
+        AUTH_MODE = "oidc_enforced";
         OIDC_PROVIDER_NAME = "Keycloak";
         OIDC_ISSUER_URL = "${cfg.authUrl}/realms/${cfg.realm}";
         OIDC_CLIENT_ID = "excalidash";
         OIDC_REDIRECT_URI = "${base}/api/auth/oidc/callback";  # verify path vs ExcaliDash docs
+        FRONTEND_URL = base;
+        BACKEND_URL = base;
       };
       environmentFiles = [ config.sops.secrets."excalidash/env".path ];
-      extraOptions = [ "--network=${net}" ];
+      extraOptions = [ "--network=${net}" "--network-alias=backend" ];   # frontend nginx upstream is "backend"
     };
     excalidash-frontend = {
       image = "zimengxiong/excalidash-frontend:latest";
@@ -51,7 +53,7 @@ in {
   };
 
   systemd.tmpfiles.rules = [
-    "d /srv/excalidash 0750 root root -"
-    "d /srv/excalidash/data 0750 root root -"
+    "d /srv/excalidash 0755 root root -"
+    "d /srv/excalidash/data 0777 root root -"
   ];
 }

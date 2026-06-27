@@ -36,12 +36,32 @@ in {
       default = true;
       description = "Run the Pangolin (newt) tunnel. Disable for VMs whose ingress you handle separately.";
     };
+    ipv4 = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Static IPv4 in CIDR (e.g. 10.10.20.10/24). null = DHCP. Server VLANs have no DHCP, so set this.";
+    };
+    gateway = lib.mkOption {
+      type = lib.types.str;
+      default = "10.10.20.1";
+      description = "Default gateway + DNS (used when ipv4 is set). WDC hosts override to 10.20.10.1.";
+    };
   };
 
   config = {
     system.stateVersion = "25.11";
-    networking.useDHCP = true;
     networking.domain = cfg.internalDomain;   # FQDN suffix: <hostname>.doa.lan
+    # Server VLANs are static-only (no DHCP). Set nixit.ipv4 → static eth0; else DHCP.
+    networking.usePredictableInterfaceNames = false;   # stable eth0 in the VM
+    networking.useDHCP = cfg.ipv4 == null;
+    networking.interfaces = lib.mkIf (cfg.ipv4 != null) {
+      eth0.ipv4.addresses = [{
+        address = lib.head (lib.splitString "/" cfg.ipv4);
+        prefixLength = lib.toInt (lib.elemAt (lib.splitString "/" cfg.ipv4) 1);
+      }];
+    };
+    networking.defaultGateway = lib.mkIf (cfg.ipv4 != null) cfg.gateway;
+    networking.nameservers   = lib.mkIf (cfg.ipv4 != null) [ "1.1.1.1" "9.9.9.9" ];  # server VLANs: public DNS (firewall allows internet, blocks inter-VLAN)
 
     boot.loader.systemd-boot.enable      = true;
     boot.loader.efi.canTouchEfiVariables = true;
@@ -58,7 +78,10 @@ in {
         neededForUsers = true;
       };
     } // lib.optionalAttrs cfg.newt.enable {
-      "newt/${config.networking.hostName}".sopsFile = ../../secrets/common.yaml;
+      "newt/${config.networking.hostName}" = {
+        sopsFile = ../../secrets/common.yaml;
+        restartUnits = [ "docker-newt.service" ];   # re-read creds on change
+      };
     };
     users.users.kuze = {
       isNormalUser  = true;

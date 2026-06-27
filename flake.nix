@@ -117,9 +117,21 @@
         ] ++ services;
       };
 
+    # Reachable IPs per host (deploy-rs connects here; bare hostnames don't resolve).
+    deployIPs = {
+      "svgmdl-keyc-01" = "10.10.20.10"; "svgmdl-forg-01" = "10.10.20.11";
+      "svgmdl-exca-01" = "10.10.20.12"; "svgmdl-immi-01" = "10.10.20.13";
+      "svgmdl-kasm-01" = "10.10.20.14"; "svgmdl-game-01" = "10.10.20.15";
+      "svgmdl-outl-01" = "10.10.20.21"; "svgmdl-outl-02" = "10.10.20.22";
+      "svgmdl-outl-03" = "10.10.20.23"; "svgwdc-pape-01" = "10.20.10.10";
+      "svgmdl-devl-01" = "10.10.20.40"; "desktop"        = "10.10.20.41";
+      "svgmdl-rumi-01" = "10.10.20.16"; "svgmdl-alia-01" = "10.10.20.17";
+      "svgwdc-svpn-01" = "10.20.10.2";
+    };
     mkNode = name: {
-      hostname = name;          # change to the reachable host/IP
+      hostname = deployIPs.${name} or name;
       sshUser  = "root";
+      sshOpts  = [ "-o" "StrictHostKeyChecking=no" "-o" "UserKnownHostsFile=/dev/null" ];
       profiles.system.path =
         deploy-rs.lib.${system}.activate.nixos self.nixosConfigurations.${name};
     };
@@ -163,23 +175,27 @@
       # FortiGate VPN gateway (father's network) — single VM, joins headscale
       "svgwdc-svpn-01" = mkServer { host = ./hosts/svgwdc-svpn-01; };
 
-      # ── App servers — one service per VM (svgmdl-<4char>-01) ─────────
-      "svgmdl-keyc-01" = mkAppServer { name = "svgmdl-keyc-01"; services = [ ./modules/services/keycloak  ]; };  # keycloak
-      "svgmdl-kasm-01" = mkAppServer { name = "svgmdl-kasm-01"; services = [ ./modules/services/kasm      ]; };  # kasm
-      "svgmdl-forg-01" = mkAppServer { name = "svgmdl-forg-01"; services = [ ./modules/services/forgejo   ]; };  # forgejo
-      "svgmdl-pape-01" = mkAppServer { name = "svgmdl-pape-01"; services = [ ./modules/services/paperless ]; };  # paperless
-      "svgmdl-outl-01" = mkAppServer { name = "svgmdl-outl-01"; services = [ ./modules/services/outline   ]; };  # outline
-      "svgmdl-immi-01" = mkAppServer { name = "svgmdl-immi-01"; services = [ ./modules/services/immich    ]; };  # immich
+      # ── App servers — one service per VM ── STATIC IPs (no DHCP on server VLANs)
+      #   MDL → 10.10.20.x (gw .1, VLAN 20) · WDC → 10.20.10.x (gw .1, VLAN 110)
+      "svgmdl-keyc-01" = mkAppServer { name = "svgmdl-keyc-01"; services = [ ./modules/services/keycloak   { nixit.ipv4 = "10.10.20.10/24"; } ]; };  # keycloak
+      "svgmdl-kasm-01" = mkAppServer { name = "svgmdl-kasm-01"; services = [ ./modules/services/kasm       { nixit.ipv4 = "10.10.20.14/24"; } ]; };  # kasm
+      "svgmdl-forg-01" = mkAppServer { name = "svgmdl-forg-01"; services = [ ./modules/services/forgejo    { nixit.ipv4 = "10.10.20.11/24"; } ]; };  # forgejo
+      "svgmdl-outl-01" = mkAppServer { name = "svgmdl-outl-01"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.21/24"; } ]; };  # outline 1
+      "svgmdl-outl-02" = mkAppServer { name = "svgmdl-outl-02"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.22/24"; } ]; };  # outline 2
+      "svgmdl-outl-03" = mkAppServer { name = "svgmdl-outl-03"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.23/24"; } ]; };  # outline 3
+      "svgmdl-immi-01" = mkAppServer { name = "svgmdl-immi-01"; services = [ ./modules/services/immich     { nixit.ipv4 = "10.10.20.13/24"; } ]; };  # immich
+      "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw { nixit.ipv4 = "10.10.20.12/24"; } ]; };  # excalidash
+      "svgmdl-game-01" = mkAppServer { name = "svgmdl-game-01"; services = [ ./modules/services/pelican    { nixit.ipv4 = "10.10.20.15/24"; } ]; };  # pelican game panel
+
+      # Paperless on the WDC (dad's) network — VLAN 110, isolated from MDL
+      "svgwdc-pape-01" = mkAppServer { name = "svgwdc-pape-01"; services = [ ./modules/services/paperless  { nixit.ipv4 = "10.20.10.10/24"; nixit.gateway = "10.20.10.1"; } ]; };  # paperless (WDC)
+
+      # ── Not in this deploy batch (kept; add IPs when you bring them up) ──
       "svgmdl-head-01" = mkAppServer { name = "svgmdl-head-01"; services = [ ./modules/services/headscale ]; };  # headscale
-      "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw ]; }; # excalidash
-      "svgmdl-alia-01" = mkAppServer { name = "svgmdl-alia-01"; services = [ ./modules/services/aliasvault ]; }; # aliasvault
-      "svgmdl-game-01" = mkAppServer { name = "svgmdl-game-01"; services = [ ./modules/services/pelican   ]; }; # pelican game panel
-
-      # Custom apps (your code) — postgres prepared, app container + ingress TBD
+      "svgmdl-pape-01" = mkAppServer { name = "svgmdl-pape-01"; services = [ ./modules/services/paperless ]; };  # paperless (MDL — superseded by svgwdc-pape-01)
+      "svgmdl-alia-01" = mkAppServer { name = "svgmdl-alia-01"; services = [ ./modules/services/aliasvault { nixit.ipv4 = "10.10.20.17/24"; } ]; }; # aliasvault (alias.lua.li)
       "svgmdl-mood-01" = mkAppServer { name = "svgmdl-mood-01"; services = [ ./modules/services/moodleng { nixit.newt.enable = false; } ]; }; # moodleng
-      "svgmdl-rumi-01" = mkAppServer { name = "svgmdl-rumi-01"; services = [ ./modules/services/rumi     { nixit.newt.enable = false; } ]; }; # rumi
-
-      # Domain controllers (LAN-facing: DNS/Kerberos/LDAP, no Pangolin)
+      "svgmdl-rumi-01" = mkAppServer { name = "svgmdl-rumi-01"; services = [ ./modules/services/rumi     { nixit.ipv4 = "10.10.20.16/24"; } ]; }; # rumi (MSP mgmt + customer, built on-VM)
       "svgmdl-fipa-01" = mkAppServer { name = "svgmdl-fipa-01"; services = [ ./modules/services/freeipa  { nixit.newt.enable = false; } ]; }; # FreeIPA
       "svgmdl-sada-01" = mkAppServer { name = "svgmdl-sada-01"; services = [ ./modules/services/samba-ad { nixit.newt.enable = false; } ]; }; # Samba AD
 
@@ -227,6 +243,9 @@
       "svgmdl-forg-01" = mkNode "svgmdl-forg-01";
       "svgmdl-pape-01" = mkNode "svgmdl-pape-01";
       "svgmdl-outl-01" = mkNode "svgmdl-outl-01";
+      "svgmdl-outl-02" = mkNode "svgmdl-outl-02";
+      "svgmdl-outl-03" = mkNode "svgmdl-outl-03";
+      "svgwdc-pape-01" = mkNode "svgwdc-pape-01";
       "svgmdl-immi-01" = mkNode "svgmdl-immi-01";
       "svgmdl-head-01" = mkNode "svgmdl-head-01";
       "svgmdl-exca-01" = mkNode "svgmdl-exca-01";

@@ -1,6 +1,6 @@
 # AliasVault — privacy password manager + built-in email aliasing.
 # Single-container image (bundles client/api/admin/SMTP via s6). Web UI behind
-# Pangolin at vault.lua.li; SMTP (25/587) is exposed directly so it can receive
+# Pangolin at alias.lua.li; SMTP (25/587) is exposed directly so it can receive
 # alias mail — point your alias domain's MX records at this host.
 #
 # No sops secret needed: admin password + data-protection keys are generated on
@@ -17,7 +17,7 @@ in {
       "587:587"
     ];
     environment = {
-      HOSTNAME = "vault.${cfg.serviceDomain}";
+      HOSTNAME = "alias.${cfg.serviceDomain}";
       PUBLIC_REGISTRATION_ENABLED = "false";
       FORCE_HTTPS_REDIRECT = "false";          # Pangolin does HTTPS
       SMTP_TLS_ENABLED = "false";

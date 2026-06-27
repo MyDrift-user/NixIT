@@ -40,7 +40,7 @@ in {
     systemd.tmpfiles.rules = [ "d /opt/kasm 0750 root root -" ];
     sops.secrets."kasm/admin-password".sopsFile = ../../../secrets/common.yaml;
 
-    environment.systemPackages = [ kasm-install pkgs.curl pkgs.gnutar ];
+    environment.systemPackages = [ kasm-install pkgs.curl pkgs.gnutar pkgs.lsof pkgs.procps pkgs.which pkgs.iproute2 pkgs.gawk pkgs.gnused ];
 
     users.motd = ''
       Kasm host — prepared, not yet installed.

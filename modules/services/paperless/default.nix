@@ -5,7 +5,7 @@
 # ingest. For LLM-grade features, add the optional `paperless-ai` companion
 # (note at the bottom).
 #
-# Secret (sops secrets/common.yaml): paperless/admin-password
+# Public URL: paper.lua.li (short). Secret (sops): paperless/admin-password.
 { config, ... }:
 let
   serviceDomain = config.nixit.serviceDomain;
@@ -19,6 +19,8 @@ in {
     passwordFile = config.sops.secrets."paperless/admin-password".path;
     settings = {
       PAPERLESS_URL = "https://paper.${serviceDomain}";
+      # behind Pangolin/newt — trust the public origin for CSRF (covers the reverse proxy)
+      PAPERLESS_CSRF_TRUSTED_ORIGINS = "https://paper.${serviceDomain}";
       PAPERLESS_TIME_ZONE = "Europe/Zurich";
       PAPERLESS_OCR_LANGUAGE = "deu+eng";
       PAPERLESS_OCR_MODE = "skip";                 # don't re-OCR already-text PDFs

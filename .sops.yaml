@@ -44,6 +44,9 @@ creation_rules:
           - *svgmdl-fipa-01
           - *svgmdl-sada-01
           - *svgmdl-devl-01
+          - age1yajdt6w93e0wp4jm3n8f2v6cgg8vh2dt2j7j93fnzv7yyzhjs5nq5u9g86  # svgmdl-outl-02
+          - age100hdlmt5thxdwuus937xartnsztgqxc2c0n25l408mx0l6umz9gq6sp82n  # svgmdl-outl-03
+          - age1kz48m57euzj4yarcn8thf2lll9hx5z99d53pcl5twgh4fvgxleuqgxn6mx  # svgwdc-pape-01
   - path_regex: secrets/(ad-dc|radius|mdl-server)\.yaml$
     key_groups:
       - age:

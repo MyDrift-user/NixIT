@@ -67,9 +67,14 @@
     ];
   };
 
-  # Deploy key for deploy-rs (root login is key-only, set above).
+  # Deploy keys for deploy-rs / ssh.exe (root login is key-only, set above).
+  # mdl_deploy is the passwordless admin key stored in mdl-infra/deployments/_admin/
+  # (the NStVTxix private key was lost and IFXXSk is passphrase-encrypted, so this
+  # is the usable one for non-interactive deploys). See deployments/_admin/README.
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINStVTxixre56N5GRSBCIAQTQYQMbFPfrLsCe2l0rUHe"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFXXSk/BLQQ2E3Q7T9WT5/u91MKELNTFpVvMMh1qJFsG user@DESKTOP-FS4MHQ1"  # WSL deploy host (passphrase)
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO/pHI10e6RYA3gOw8ptXqvdDyJzkE5eL9ZsCMRVUhv+ mdl-deploy"  # passwordless admin deploy key
   ];
 
   services.journald.extraConfig = ''
