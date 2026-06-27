@@ -76,28 +76,53 @@ in {
     "d /tmp/pelican 0750 root root -"
   ];
 
-  # Ensure the generic-oidc-providers plugin is present + its composer dep is
-  # installed (vendor is ephemeral, so re-run each boot), then reload the panel.
+  # Keep the generic-oidc-providers plugin present + its composer dep installed.
+  # The plugin CODE lives in the persisted /srv/pelican/plugins volume, but its
+  # composer dep (kovah/laravel-socialite-oidc) is installed into the panel's
+  # /var/www/html/vendor, which is INSIDE the container layer — wiped whenever the
+  # container is recreated (deploy / image update). So we re-run on every panel
+  # (re)start (partOf the panel service) to restore it.
+  #
+  # Decoupled + non-fatal by design: `wants` not `requires`, no `set -e`, every
+  # step `|| true`, `exit 0`. It uses `docker restart` (keeps the writable layer,
+  # so the freshly-installed vendor survives the reload) — NOT `systemctl restart`
+  # (which would recreate the container and wipe vendor again, looping). This must
+  # never be able to fail/slow a deploy into a magic-rollback.
   systemd.services.pelican-oidc-plugin = {
-    description = "Pelican: generic-oidc-providers plugin + composer deps";
+    description = "Pelican: install generic-oidc-providers plugin + restore composer dep";
     after = [ "docker-pelican-panel.service" ];
-    requires = [ "docker-pelican-panel.service" ];
-    wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.curl pkgs.gnutar ];
-    serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
+    wants = [ "docker-pelican-panel.service" ];
+    partOf = [ "docker-pelican-panel.service" ];
+    wantedBy = [ "docker-pelican-panel.service" "multi-user.target" ];
+    path = [ pkgs.curl pkgs.gnutar pkgs.coreutils ];
+    serviceConfig = { Type = "oneshot"; RemainAfterExit = true; TimeoutStartSec = 600; };
     script = ''
-      set -eu
-      if [ ! -f /srv/pelican/plugins/generic-oidc-providers/plugin.json ]; then
+      set -u
+      PDIR=/srv/pelican/plugins/generic-oidc-providers
+      # 1. Fetch the plugin into the persisted volume if missing. Download to a
+      #    file (avoids the SIGPIPE that killed `curl | tar`) and extract ONLY the
+      #    one subdir (the full plugins repo is large).
+      if [ ! -f "$PDIR/plugin.json" ]; then
         tmp=$(mktemp -d)
-        curl -fsSL https://github.com/pelican-dev/plugins/archive/refs/heads/main.tar.gz | tar -xz -C "$tmp"
-        cp -r "$tmp"/plugins-*/generic-oidc-providers /srv/pelican/plugins/
+        if curl -fsSL -o "$tmp/p.tgz" https://github.com/pelican-dev/plugins/archive/refs/heads/main.tar.gz; then
+          tar -xzf "$tmp/p.tgz" -C "$tmp" --strip-components=1 plugins-main/generic-oidc-providers || true
+          mkdir -p /srv/pelican/plugins
+          cp -r "$tmp/generic-oidc-providers" /srv/pelican/plugins/ || true
+        fi
         rm -rf "$tmp"
       fi
-      chown -R 82:82 /srv/pelican/plugins
-      for i in $(seq 1 40); do ${docker} exec pelican-panel php artisan --version >/dev/null 2>&1 && break; sleep 3; done
-      ${docker} exec pelican-panel php artisan p:plugin:install generic-oidc-providers --silent || true
-      ${docker} exec pelican-panel php artisan p:plugin:composer || true
-      ${docker} restart pelican-panel >/dev/null 2>&1 || true
+      chown -R 82:82 /srv/pelican/plugins 2>/dev/null || true
+      # 2. Wait (bounded) for the panel's artisan to answer.
+      for i in $(seq 1 30); do ${docker} exec pelican-panel php artisan --version >/dev/null 2>&1 && break; sleep 2; done
+      # 3. (Re)install the plugin (idempotent) and restore its composer dep. Only
+      #    restart the panel if the socialite OIDC class wasn't already loadable
+      #    (i.e. vendor was wiped) — `docker restart` keeps the just-built vendor.
+      need_restart=0
+      ${docker} exec pelican-panel php -r 'exit(class_exists("SocialiteProviders\\OIDC\\Provider")?0:1);' >/dev/null 2>&1 || need_restart=1
+      ${docker} exec pelican-panel php artisan p:plugin:install generic-oidc-providers --no-interaction >/dev/null 2>&1 || true
+      ${docker} exec pelican-panel php artisan p:plugin:composer >/dev/null 2>&1 || true
+      [ "$need_restart" = "1" ] && ${docker} restart pelican-panel >/dev/null 2>&1 || true
+      exit 0
     '';
   };
 
