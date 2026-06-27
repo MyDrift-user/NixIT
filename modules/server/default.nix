@@ -19,6 +19,10 @@
   # ── Fail2ban ────────────────────────────────────────────────────────
   services.fail2ban = {
     enable = true;
+    # Never ban the admin/deploy sources — admin traffic NATs through the VLAN
+    # gateway, so a few failed key attempts there would otherwise lock out the
+    # whole site (the .1 gateways) and the Proxmox hosts.
+    ignoreIP = [ "127.0.0.1/8" "::1" "10.10.10.0/24" "10.10.20.1" "10.20.10.1" ];
     maxretry = 3;
     bantime = "1h";
     bantime-increment = {
