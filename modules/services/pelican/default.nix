@@ -25,6 +25,9 @@ in {
         APP_TIMEZONE  = "Europe/Zurich";
         MAIL_DRIVER   = "log";
         XDG_DATA_HOME = "/pelican-data";
+        # Behind Pangolin (TLS terminated upstream) — tell the panel's bundled
+        # Caddy it's behind a proxy so it serves HTTP and doesn't try Let's Encrypt.
+        TRUSTED_PROXIES = "*";
       };
       volumes = [
         "/srv/pelican/data:/pelican-data"
