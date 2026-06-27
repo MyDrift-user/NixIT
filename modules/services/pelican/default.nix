@@ -94,7 +94,7 @@ in {
     wants = [ "docker-pelican-panel.service" ];
     partOf = [ "docker-pelican-panel.service" ];
     wantedBy = [ "docker-pelican-panel.service" "multi-user.target" ];
-    path = [ pkgs.curl pkgs.gnutar pkgs.coreutils ];
+    path = [ pkgs.curl pkgs.gnutar pkgs.gzip pkgs.coreutils ];  # gnutar shells out to gzip for -z
     serviceConfig = { Type = "oneshot"; RemainAfterExit = true; TimeoutStartSec = 600; };
     script = ''
       set -u

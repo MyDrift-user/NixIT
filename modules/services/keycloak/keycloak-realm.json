@@ -72,6 +72,17 @@
       "secret": "${FREEIPA_CLIENT_SECRET}",
       "standardFlowEnabled": false,
       "attributes": { "oauth2.device.authorization.grant.enabled": "true" }
+    },
+    {
+      "clientId": "pelican",
+      "name": "Pelican Game Panel",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${PELICAN_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "redirectUris": [ "https://game.lua.li/auth/oauth/callback/keycloak" ],
+      "webOrigins": [ "https://game.lua.li" ]
     }
   ]
 }
