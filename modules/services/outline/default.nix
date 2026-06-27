@@ -79,7 +79,7 @@ in {
   systemd.tmpfiles.rules = [
     "d /var/lib/outline 0750 root root -"
     "d /var/lib/outline/data 0777 root root -"
-    "d /var/lib/outline/pg 0750 root root -"
+    "d /var/lib/outline/pg 0700 70 70 -"   # postgres (alpine uid 70) owns its data — don't reset to root
   ];
 
   networking.firewall.allowedTCPPorts = [ 3000 ];

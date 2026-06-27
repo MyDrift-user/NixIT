@@ -69,7 +69,7 @@ in {
 
   systemd.tmpfiles.rules = [
     "d /srv/keycloak 0750 root root -"
-    "d /srv/keycloak/db 0750 root root -"
+    "d /srv/keycloak/db 0700 70 70 -"   # postgres (alpine uid 70) owns its data — don't reset to root
     "d /srv/keycloak/providers 0755 root root -"
   ];
 }

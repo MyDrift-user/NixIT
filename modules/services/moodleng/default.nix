@@ -79,7 +79,7 @@ in {
 
   systemd.tmpfiles.rules = [
     "d /srv/moodleng 0750 root root -"
-    "d /srv/moodleng/db 0750 root root -"
+    "d /srv/moodleng/db 0700 70 70 -"   # postgres (alpine uid 70) owns its data — don't reset to root
     "d /srv/moodleng/logs 0750 root root -"
     "d /srv/moodleng/workspace 0750 root root -"
   ];
