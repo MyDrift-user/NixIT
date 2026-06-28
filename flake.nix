@@ -94,6 +94,10 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
+            # Back up (don't fail on) pre-existing files HM wants to manage — a
+            # stray ~/.config/fuzzel/fuzzel.ini was making home-manager-<user>.service
+            # fail every boot, freezing kuze's config at the original install.
+            home-manager.backupFileExtension = "hmbak";
             home-manager.extraSpecialArgs = { inherit inputs; desktopEnvironment = de; };
             home-manager.users.kuze = import ./home/kuze/home.nix;
           }
