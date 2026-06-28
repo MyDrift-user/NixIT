@@ -2,16 +2,18 @@
 # System-wide (no home-manager) so it's "just dev stuff" in PATH for any user.
 { pkgs, inputs, ... }:
 let
-  # VS Code Insiders — built from Microsoft's official "latest insider" tarball
-  # (there is no maintained nixpkgs/flake for Insiders). To bump it, re-prefetch:
-  #   nix store prefetch-file --name vscode-insiders.tar.gz \
-  #     https://update.code.visualstudio.com/latest/linux-x64/insider
-  # and paste the printed hash below.
+  # VS Code Insiders — built from Microsoft's official tarball (no maintained
+  # nixpkgs/flake for Insiders). PIN A SPECIFIC BUILD, never `/latest/`: that URL
+  # serves a new binary daily so a fixed hash drifts and the build breaks. The
+  # `commit:<sha>` URL is content-stable. To bump, query the update API:
+  #   curl -s https://update.code.visualstudio.com/api/update/linux-x64/insider/latest
+  # take `version` (commit) for the URL and `sha256hash`, then:
+  #   nix hash convert --hash-algo sha256 --to sri <sha256hash>
   vscode-insiders = (pkgs.vscode.override { isInsiders = true; }).overrideAttrs (_: {
-    version = "latest";
+    version = "1.127.0-insider";
     src = pkgs.fetchurl {
-      url = "https://update.code.visualstudio.com/latest/linux-x64/insider";
-      hash = "sha256-gSlE2ucMqtDR7S3L5FbOaiP3amXc5moyS63PPHsIvdA=";
+      url = "https://update.code.visualstudio.com/commit:628f6de50e89b20c7688c66ac2923cce2862c1b0/linux-x64/insider";
+      hash = "sha256-UHpKF4VLEn/YOH/f+loY/GQeyrv2trbKhiSVth5M/to=";
     };
   });
 in {
