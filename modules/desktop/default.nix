@@ -47,5 +47,8 @@
   networking.networkmanager.enable = true;
   networking.firewall.enable       = true;
 
+  # KVM guest agent (these desktops run as Proxmox VMs; harmless on bare metal).
+  services.qemuGuest.enable = true;
+
   # Bootloader is configured per-host by the installer (boot.nix)
 }

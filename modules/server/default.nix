@@ -2,6 +2,7 @@
 { config, pkgs, ... }: {
   imports = [
     ./docker
+    ./proxmox.nix   # KVM guest: qemu-guest-agent + console=tty0/ttyS0 + virtio + fstrim
   ];
 
   environment.systemPackages = with pkgs; [
