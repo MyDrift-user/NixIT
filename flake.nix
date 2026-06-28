@@ -256,6 +256,7 @@
       "svgmdl-fipa-01" = mkNode "svgmdl-fipa-01";
       "svgmdl-sada-01" = mkNode "svgmdl-sada-01";
       "svgmdl-devl-01" = mkNode "svgmdl-devl-01";
+      "desktop"        = mkNode "desktop";
     };
 
     # `nix flake check` validates every deploy node builds + activation is sane.
