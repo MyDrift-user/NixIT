@@ -1,5 +1,5 @@
 # svgmdl-devl-01 — developer workstation VM (GNOME + dev tooling + Helium).
-{ ... }: {
+{ pkgs, ... }: {
   imports = [
     ./hardware-configuration.nix
     ./disk.nix
@@ -15,6 +15,15 @@
   networking.nameservers = [ "1.1.1.1" "9.9.9.9" ];
   networking.networkmanager.unmanaged = [ "eth0" ];
   services.openssh.enable = true;
+
+  # RDP (Windows mstsc → kuze + sops password). xrdp spawns its own GNOME-on-Xorg
+  # session via xorgxrdp, independent of the local GDM/Wayland session.
+  services.xrdp = {
+    enable = true;
+    defaultWindowManager = "${pkgs.gnome-session}/bin/gnome-session";
+    openFirewall = true;   # opens 3389
+  };
+
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO/pHI10e6RYA3gOw8ptXqvdDyJzkE5eL9ZsCMRVUhv+ mdl-deploy"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFXXSk/BLQQ2E3Q7T9WT5/u91MKELNTFpVvMMh1qJFsG user@DESKTOP-FS4MHQ1"
