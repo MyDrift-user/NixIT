@@ -16,12 +16,17 @@
   networking.networkmanager.unmanaged = [ "eth0" ];
   services.openssh.enable = true;
 
-  # RDP (Windows mstsc → kuze + sops password). xrdp spawns its own GNOME-on-Xorg
-  # session via xorgxrdp, independent of the local GDM/Wayland session.
+  # RDP (Windows mstsc → kuze + password). xrdp serves an Xorg session via
+  # xorgxrdp, so the RDP desktop must be X11. GNOME 49 is Wayland-ONLY (it dropped
+  # the X11 session), so gnome-session SIGTRAPs under xrdp and the connection drops
+  # — use XFCE for the RDP session instead. The local/console session stays GNOME;
+  # all dev tools are system-wide, so they work in either. (For GNOME remotely,
+  # use Sunshine/Moonlight like the desktop VM.)
+  services.xserver.desktopManager.xfce.enable = true;
   services.xrdp = {
     enable = true;
-    defaultWindowManager = "${pkgs.gnome-session}/bin/gnome-session";
-    openFirewall = true;   # opens 3389
+    defaultWindowManager = "xfce4-session";
+    openFirewall = true; # opens 3389
   };
 
   users.users.root.openssh.authorizedKeys.keys = [
