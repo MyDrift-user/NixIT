@@ -507,6 +507,11 @@ in
       };
       listener = [
         { timeout = 300; on-timeout = "hyprlock"; }
+      ]
+      # DPMS-off freezes the virtio-GPU on the Sunshine streaming VM (the guest
+      # hangs with "Display output is not active"), and a blanked display has
+      # nothing to stream anyway — so skip it when this host streams via Sunshine.
+      ++ lib.optionals (!(osConfig.services.sunshine.enable or false)) [
         { timeout = 600; on-timeout = "hyprctl dispatch dpms off"; on-resume = "hyprctl dispatch dpms on"; }
       ];
     };
