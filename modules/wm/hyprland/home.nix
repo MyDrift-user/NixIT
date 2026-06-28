@@ -505,14 +505,12 @@ in
         before_sleep_cmd = "loginctl lock-session";
         after_sleep_cmd  = "hyprctl dispatch dpms on";
       };
+      # No `dpms off` listener: on the Sunshine streaming VM it freezes the
+      # virtio-GPU (the whole guest hangs with "Display output is not active"),
+      # and a blanked display can't be streamed anyway. Keep only the lock.
+      # (Re-add a dpms-off listener if this module is ever used on real laptop HW.)
       listener = [
         { timeout = 300; on-timeout = "hyprlock"; }
-      ]
-      # DPMS-off freezes the virtio-GPU on the Sunshine streaming VM (the guest
-      # hangs with "Display output is not active"), and a blanked display has
-      # nothing to stream anyway — so skip it when this host streams via Sunshine.
-      ++ lib.optionals (!(osConfig.services.sunshine.enable or false)) [
-        { timeout = 600; on-timeout = "hyprctl dispatch dpms off"; on-resume = "hyprctl dispatch dpms on"; }
       ];
     };
   };
