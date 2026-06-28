@@ -3,7 +3,11 @@
 #   nixos-generate-config --no-filesystems --show-hardware-config
 { ... }: {
   boot.loader.systemd-boot.enable      = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  # false: installed via nixos-anywhere; its kexec installer inherits the SeaBIOS
+  # firmware mode (no efivarfs), so writing EFI NVRAM vars would fail. systemd-boot
+  # still installs the removable fallback (\EFI\BOOT\BOOTX64.EFI), so after the VM
+  # is converted to OVMF it boots via that path without an NVRAM entry.
+  boot.loader.efi.canTouchEfiVariables = false;
 
   boot.initrd.availableKernelModules = [
     "ahci" "nvme" "sd_mod" "xhci_pci" "usbhid"
