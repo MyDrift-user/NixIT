@@ -13,7 +13,8 @@
     shell         = pkgs.bash;
     hashedPasswordFile = config.sops.secrets."kuze/password/${config.networking.hostName}".path;
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINStVTxixre56N5GRSBCIAQTQYQMbFPfrLsCe2l0rUHe"
+      # mdl-deploy — working fleet key (the old NStVTxix key was lost).
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO/pHI10e6RYA3gOw8ptXqvdDyJzkE5eL9ZsCMRVUhv+ mdl-deploy"
     ];
   };
 }
