@@ -145,8 +145,9 @@ in {
       value = {
         device = "${cfg.nasStorage.server}:${m.export}";
         fsType = "nfs";
-        # soft+timeo so a NAS reboot errors gracefully instead of hanging the service.
-        options = [ "nfsvers=4.1" "_netdev" "noatime" "soft" "timeo=600" "retrans=2" "rsize=131072" "wsize=131072" ];
+        # The Synology only serves NFSv3 here; nolock avoids needing rpc.statd
+        # (fine — single-writer media). soft+timeo so a NAS reboot errors gracefully.
+        options = [ "nfsvers=3" "nolock" "_netdev" "noatime" "soft" "timeo=600" "retrans=2" "rsize=131072" "wsize=131072" ];
       };
     }) cfg.nasStorage.mounts));
 
