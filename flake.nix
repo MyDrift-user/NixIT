@@ -181,25 +181,28 @@
 
       # ── App servers — one service per VM ── STATIC IPs (no DHCP on server VLANs)
       #   MDL → 10.10.20.x (gw .1, VLAN 20) · WDC → 10.20.10.x (gw .1, VLAN 110)
-      "svgmdl-keyc-01" = mkAppServer { name = "svgmdl-keyc-01"; services = [ ./modules/services/keycloak   { nixit.ipv4 = "10.10.20.10/24"; } ]; };  # keycloak
-      "svgmdl-kasm-01" = mkAppServer { name = "svgmdl-kasm-01"; services = [ ./modules/services/kasm       { nixit.ipv4 = "10.10.20.14/24"; } ]; };  # kasm
-      "svgmdl-forg-01" = mkAppServer { name = "svgmdl-forg-01"; services = [ ./modules/services/forgejo    { nixit.ipv4 = "10.10.20.11/24"; } ]; };  # forgejo
-      "svgmdl-outl-01" = mkAppServer { name = "svgmdl-outl-01"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.21/24"; } ]; };  # outline 1
+      "svgmdl-keyc-01" = mkAppServer { name = "svgmdl-keyc-01"; services = [ ./modules/services/keycloak   { nixit.ipv4 = "10.10.20.10/24"; nixit.pangolin.resources = [{ key = "keycloak"; name = "Keycloak"; fullDomain = "mdl.auth.li"; port = 8080; sso = false; healthPath = "/realms/master"; }]; } ]; };  # keycloak (no Pangolin SSO — self-protects; required for OIDC token exchange)
+      "svgmdl-kasm-01" = mkAppServer { name = "svgmdl-kasm-01"; services = [ ./modules/services/kasm       { nixit.ipv4 = "10.10.20.14/24"; nixit.pangolin.resources = [{ key = "kasm"; name = "Kasm"; fullDomain = "office.lua.li"; port = 443; method = "https"; sso = false; healthPath = "/api/__healthcheck"; }]; } ]; };  # kasm (own auth)
+      "svgmdl-forg-01" = mkAppServer { name = "svgmdl-forg-01"; services = [ ./modules/services/forgejo    { nixit.ipv4 = "10.10.20.11/24"; nixit.pangolin.resources = [{ key = "forgejo"; name = "Forgejo"; fullDomain = "git.lua.li"; port = 3000; sso = false; healthPath = "/api/healthz"; }]; } ]; };  # forgejo (own auth)
+      "svgmdl-outl-01" = mkAppServer { name = "svgmdl-outl-01"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.21/24"; nixit.pangolin.resources = [{ key = "outline"; name = "Outline"; fullDomain = "docs.lua.li"; port = 3000; sso = true; healthPath = "/_health"; }]; } ]; };  # outline 1
       "svgmdl-outl-02" = mkAppServer { name = "svgmdl-outl-02"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.22/24"; } ]; };  # outline 2
       "svgmdl-outl-03" = mkAppServer { name = "svgmdl-outl-03"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.23/24"; } ]; };  # outline 3
-      "svgmdl-immi-01" = mkAppServer { name = "svgmdl-immi-01"; services = [ ./modules/services/immich     { nixit.ipv4 = "10.10.20.13/24"; } ]; };  # immich
-      "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw { nixit.ipv4 = "10.10.20.12/24"; } ]; };  # excalidash
-      "svgmdl-game-01" = mkAppServer { name = "svgmdl-game-01"; services = [ ./modules/services/pelican    { nixit.ipv4 = "10.10.20.15/24"; } ]; };  # pelican game panel
+      "svgmdl-immi-01" = mkAppServer { name = "svgmdl-immi-01"; services = [ ./modules/services/immich     { nixit.ipv4 = "10.10.20.13/24"; nixit.pangolin.resources = [{ key = "immich"; name = "Immich"; fullDomain = "photos.lua.li"; port = 2283; sso = false; healthPath = "/api/server/ping"; }]; } ]; };  # immich (own auth/OIDC)
+      "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw { nixit.ipv4 = "10.10.20.12/24"; nixit.pangolin.resources = [{ key = "excalidash"; name = "ExcaliDash"; fullDomain = "draw.lua.li"; port = 6767; sso = true; healthPath = "/health"; }]; } ]; };  # excalidash
+      "svgmdl-game-01" = mkAppServer { name = "svgmdl-game-01"; services = [ ./modules/services/pelican    { nixit.ipv4 = "10.10.20.15/24"; nixit.pangolin.resources = [{ key = "pelican"; name = "Pelican"; fullDomain = "game.lua.li"; port = 8085; sso = true; healthPath = "/up"; }]; } ]; };  # pelican game panel
 
       # Paperless on the WDC (dad's) network — VLAN 110, isolated from MDL
-      "svgwdc-pape-01" = mkAppServer { name = "svgwdc-pape-01"; services = [ ./modules/services/paperless  { nixit.ipv4 = "10.20.10.10/24"; nixit.gateway = "10.20.10.1"; } ]; };  # paperless (WDC)
+      "svgwdc-pape-01" = mkAppServer { name = "svgwdc-pape-01"; services = [ ./modules/services/paperless  { nixit.ipv4 = "10.20.10.10/24"; nixit.gateway = "10.20.10.1"; nixit.pangolin.resources = [{ key = "paperless"; name = "Paperless"; fullDomain = "paper.lua.li"; port = 28981; sso = true; healthPath = "/accounts/login/"; }]; } ]; };  # paperless (WDC)
 
       # ── Not in this deploy batch (kept; add IPs when you bring them up) ──
       "svgmdl-head-01" = mkAppServer { name = "svgmdl-head-01"; services = [ ./modules/services/headscale ]; };  # headscale
       "svgmdl-pape-01" = mkAppServer { name = "svgmdl-pape-01"; services = [ ./modules/services/paperless ]; };  # paperless (MDL — superseded by svgwdc-pape-01)
       "svgmdl-alia-01" = mkAppServer { name = "svgmdl-alia-01"; services = [ ./modules/services/aliasvault { nixit.ipv4 = "10.10.20.17/24"; } ]; }; # aliasvault (alias.lua.li)
       "svgmdl-mood-01" = mkAppServer { name = "svgmdl-mood-01"; services = [ ./modules/services/moodleng { nixit.newt.enable = false; } ]; }; # moodleng
-      "svgmdl-rumi-01" = mkAppServer { name = "svgmdl-rumi-01"; services = [ ./modules/services/rumi     { nixit.ipv4 = "10.10.20.16/24"; } ]; }; # rumi (MSP mgmt + customer, built on-VM)
+      "svgmdl-rumi-01" = mkAppServer { name = "svgmdl-rumi-01"; services = [ ./modules/services/rumi     { nixit.ipv4 = "10.10.20.16/24"; nixit.pangolin.resources = [
+        { key = "rumi-mgmt"; name = "Rumi MGMT"; fullDomain = "rumi.lua.li"; port = 8080; sso = true; healthPath = "/"; }
+        { key = "rumi-customer"; name = "Rumi Customer WDC"; fullDomain = "service.wdconsulting.ch"; port = 8090; sso = false; healthPath = "/"; }  # customer-facing: own auth, no Pangolin SSO
+      ]; } ]; }; # rumi (MSP mgmt + customer, built on-VM)
       "svgmdl-fipa-01" = mkAppServer { name = "svgmdl-fipa-01"; services = [ ./modules/services/freeipa  { nixit.newt.enable = false; } ]; }; # FreeIPA
       "svgmdl-sada-01" = mkAppServer { name = "svgmdl-sada-01"; services = [ ./modules/services/samba-ad { nixit.newt.enable = false; } ]; }; # Samba AD
 

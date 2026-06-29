@@ -1,9 +1,41 @@
 # Shared base for single-purpose app servers. Collapses disk layout, admin
 # user, bootloader and network into one module so each host in flake.nix is
 # just a name + a service module. Set per-host bits via the `nixit.*` options.
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   cfg = config.nixit;
+
+  # Render this host's Pangolin resources (declared via nixit.pangolin.resources)
+  # into a blueprint that `newt` applies (BLUEPRINT_FILE) — so the reverse-proxy
+  # mapping + health checks are declarative, scoped to THIS host's newt site.
+  # builtins.toJSON output is valid YAML, which is what newt's blueprint parser wants.
+  mkResource = r: {
+    name = r.name;
+    "full-domain" = r.fullDomain;
+    protocol = "http";
+    ssl = true;
+    auth = { "sso-enabled" = r.sso; } // lib.optionalAttrs r.sso { "sso-roles" = [ "Member" ]; };
+    targets = [{
+      hostname = "localhost";
+      method = r.method;
+      port = r.port;
+      healthcheck = {
+        enabled = true;
+        hostname = "localhost";
+        path = r.healthPath;
+        method = "GET";
+        port = r.port;
+        scheme = r.method; # http/https; newt skips cert verify unless ENFORCE_HC_CERT=true
+        status = r.healthStatus;
+      };
+    }];
+  };
+  blueprint = {
+    "public-resources" =
+      builtins.listToAttrs (map (r: { name = r.key; value = mkResource r; }) cfg.pangolin.resources);
+  };
+  blueprintFile = pkgs.writeText "pangolin-blueprint.json" (builtins.toJSON blueprint);
+  haveBlueprint = cfg.newt.enable && cfg.pangolin.resources != [ ];
 in {
   options.nixit = {
     diskDevice = lib.mkOption {
@@ -35,6 +67,27 @@ in {
       type = lib.types.bool;
       default = true;
       description = "Run the Pangolin (newt) tunnel. Disable for VMs whose ingress you handle separately.";
+    };
+    pangolin.resources = lib.mkOption {
+      default = [ ];
+      description = ''
+        Pangolin resources for this host, applied declaratively via the newt
+        blueprint (incl. simple HTTP health checks). Each entry maps a public
+        domain to a local service port on this VM. Targets are always localhost
+        (newt runs --network=host on the service VM).
+      '';
+      type = lib.types.listOf (lib.types.submodule {
+        options = {
+          key = lib.mkOption { type = lib.types.str; description = "Blueprint resource key (unique per host)."; };
+          name = lib.mkOption { type = lib.types.str; description = "Display name in Pangolin."; };
+          fullDomain = lib.mkOption { type = lib.types.str; description = "Public domain, e.g. git.lua.li."; };
+          port = lib.mkOption { type = lib.types.int; description = "Local service port on this VM."; };
+          method = lib.mkOption { type = lib.types.enum [ "http" "https" ]; default = "http"; description = "Upstream scheme."; };
+          sso = lib.mkOption { type = lib.types.bool; default = true; description = "Gate behind Pangolin SSO (Member role). Off for apps with their own auth."; };
+          healthPath = lib.mkOption { type = lib.types.str; default = "/"; description = "Health-check path (must return healthStatus)."; };
+          healthStatus = lib.mkOption { type = lib.types.int; default = 200; description = "Expected health-check HTTP status."; };
+        };
+      });
     };
     ipv4 = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
@@ -101,6 +154,9 @@ in {
       newt = {
         image = "fosrl/newt:1";   # pin to an exact patch for production
         environmentFiles = [ config.sops.secrets."newt/${config.networking.hostName}".path ];
+        # Declarative reverse-proxy mapping + health checks (nixit.pangolin.resources).
+        environment = lib.optionalAttrs haveBlueprint { BLUEPRINT_FILE = "/etc/newt/blueprint.yaml"; };
+        volumes = lib.optionals haveBlueprint [ "${blueprintFile}:/etc/newt/blueprint.yaml:ro" ];
         extraOptions = [ "--network=host" ];
       };
     };
