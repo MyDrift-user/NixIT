@@ -94,6 +94,24 @@ in {
       default = null;
       description = "Static IPv4 in CIDR (e.g. 10.10.20.10/24). null = DHCP. Server VLANs have no DHCP, so set this.";
     };
+    nasStorage = {
+      ip = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "This VM's IP on the storage VLAN (30) for NAS NFS. null = no NAS storage. Requires a 2nd NIC (qm set <vmid> -net1 virtio,bridge=vmbr0,tag=30) → eth1.";
+      };
+      server = lib.mkOption { type = lib.types.str; default = "10.10.30.20"; description = "NFS server (Synology)."; };
+      mounts = lib.mkOption {
+        default = [ ];
+        description = "NAS exports to NFS-mount on this host (long-term storage). Mount ONLY bulk-media dirs — never a dir holding a SQLite DB.";
+        type = lib.types.listOf (lib.types.submodule {
+          options = {
+            export = lib.mkOption { type = lib.types.str; description = "NAS path, e.g. /volume1/MDL/immich."; };
+            mountPoint = lib.mkOption { type = lib.types.str; description = "Local mount point (the service's media dir)."; };
+          };
+        });
+      };
+    };
     gateway = lib.mkOption {
       type = lib.types.str;
       default = "10.10.20.1";
@@ -115,6 +133,22 @@ in {
     };
     networking.defaultGateway = lib.mkIf (cfg.ipv4 != null) cfg.gateway;
     networking.nameservers   = lib.mkIf (cfg.ipv4 != null) [ "1.1.1.1" "9.9.9.9" ];  # server VLANs: public DNS (firewall allows internet, blocks inter-VLAN)
+
+    # NAS long-term storage: a 2nd NIC (eth1) on the storage VLAN (30) + NFS mounts
+    # of /volume1/MDL/<svc>. No inter-VLAN firewall hole — storage stays on VLAN 30.
+    networking.interfaces.eth1 = lib.mkIf (cfg.nasStorage.ip != null) {
+      useDHCP = false;
+      ipv4.addresses = [{ address = cfg.nasStorage.ip; prefixLength = 24; }];
+    };
+    fileSystems = lib.mkIf (cfg.nasStorage.ip != null) (builtins.listToAttrs (map (m: {
+      name = m.mountPoint;
+      value = {
+        device = "${cfg.nasStorage.server}:${m.export}";
+        fsType = "nfs";
+        # soft+timeo so a NAS reboot errors gracefully instead of hanging the service.
+        options = [ "nfsvers=4.1" "_netdev" "noatime" "soft" "timeo=600" "retrans=2" "rsize=131072" "wsize=131072" ];
+      };
+    }) cfg.nasStorage.mounts));
 
     boot.loader.systemd-boot.enable      = true;
     boot.loader.efi.canTouchEfiVariables = true;
