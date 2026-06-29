@@ -63,6 +63,11 @@ in {
       default = "main";
       description = "Keycloak realm the apps authenticate against.";
     };
+    outlineUrl = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Override Outline's public URL (default https://docs.<serviceDomain>). Set per-host for extra Outline instances on a different domain, e.g. https://idpa.mydrift.dev.";
+    };
     newt.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;

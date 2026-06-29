@@ -30,7 +30,7 @@ in {
       DATABASE_URL=postgres://outline:outline@outline-postgres:5432/outline
       PGSSLMODE=disable
       REDIS_URL=redis://outline-redis:6379
-      URL=https://docs.${cfg.serviceDomain}
+      URL=${if cfg.outlineUrl != null then cfg.outlineUrl else "https://docs.${cfg.serviceDomain}"}
       PORT=3000
       FILE_STORAGE=local
       FILE_STORAGE_LOCAL_ROOT_DIR=/var/lib/outline/data

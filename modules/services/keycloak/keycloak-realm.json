@@ -21,8 +21,8 @@
       "publicClient": false,
       "secret": "${OUTLINE_CLIENT_SECRET}",
       "standardFlowEnabled": true,
-      "redirectUris": [ "https://docs.lua.li/*" ],
-      "webOrigins": [ "https://docs.lua.li" ]
+      "redirectUris": [ "https://docs.lua.li/*", "https://idpa.mydrift.dev/*" ],
+      "webOrigins": [ "https://docs.lua.li", "https://idpa.mydrift.dev" ]
     },
     {
       "clientId": "kasm",
