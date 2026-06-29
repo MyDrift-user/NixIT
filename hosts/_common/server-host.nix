@@ -125,8 +125,8 @@ in {
     # Server VLANs are static-only (no DHCP). Set nixit.ipv4 → static eth0; else DHCP.
     networking.usePredictableInterfaceNames = false;   # stable eth0 in the VM
     networking.useDHCP = cfg.ipv4 == null;
-    networking.interfaces = lib.mkIf (cfg.ipv4 != null) {
-      eth0.ipv4.addresses = [{
+    networking.interfaces.eth0 = lib.mkIf (cfg.ipv4 != null) {
+      ipv4.addresses = [{
         address = lib.head (lib.splitString "/" cfg.ipv4);
         prefixLength = lib.toInt (lib.elemAt (lib.splitString "/" cfg.ipv4) 1);
       }];
