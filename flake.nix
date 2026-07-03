@@ -202,7 +202,8 @@
       "svgmdl-rumi-01" = mkAppServer { name = "svgmdl-rumi-01"; services = [ ./modules/services/rumi     { nixit.ipv4 = "10.10.20.16/24"; nixit.pangolin.resources = [
         { key = "rumi-mgmt"; name = "Rumi MGMT"; fullDomain = "rumi.lua.li"; port = 8080; sso = false; healthPath = "/"; }  # own auth — no Pangolin gate
         { key = "rumi-customer"; name = "Rumi Customer WDC"; fullDomain = "service.wdconsulting.ch"; port = 8090; sso = false; healthPath = "/"; }  # customer-facing: own auth, no Pangolin SSO
-      ]; } ]; }; # rumi (MSP mgmt + customer, built on-VM)
+        { key = "mesh"; name = "Rumi Mesh (Headscale)"; fullDomain = "mesh.lua.li"; port = 8091; sso = false; healthPath = "/health"; }  # Headscale coord server — direct (device auth); WS upgrades /ts2021 /derp pass through Traefik
+      ]; } ]; }; # rumi (MSP mgmt + customer + Headscale mesh, built on-VM)
       "svgmdl-fipa-01" = mkAppServer { name = "svgmdl-fipa-01"; services = [ ./modules/services/freeipa  { nixit.newt.enable = false; } ]; }; # FreeIPA
       "svgmdl-sada-01" = mkAppServer { name = "svgmdl-sada-01"; services = [ ./modules/services/samba-ad { nixit.newt.enable = false; } ]; }; # Samba AD
 
