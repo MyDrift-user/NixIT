@@ -55,16 +55,16 @@
       flake = false;
     };
 
+    # rumi agent — relay role (private flake, buildRustPackage)
+    rumi.url = "github:MyDrift-user/rumi?dir=installer/nix";
+
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, sops-nix, disko, deploy-rs, zen-browser, caelestia-dots-repo, ... }@inputs:
   let
     system = "x86_64-linux";
 
-    # ── Host builders ───────────────────────────────────────────────────
-    # Every config is assembled from a small module list. The helpers below
-    # keep the three desktop variants and every server identical except for
-    # the one or two modules that actually differ.
+    # Host builders: assemble each config from a small module list.
 
     mkServer = { host, extraModules ? [ ] }:
       nixpkgs.lib.nixosSystem {
@@ -94,9 +94,8 @@
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            # Back up (don't fail on) pre-existing files HM wants to manage — a
-            # stray ~/.config/fuzzel/fuzzel.ini was making home-manager-<user>.service
-            # fail every boot, freezing kuze's config at the original install.
+            # back up pre-existing files instead of failing HM activation —
+            # a stray fuzzel.ini was breaking home-manager-<user>.service every boot
             home-manager.backupFileExtension = "hmbak";
             home-manager.extraSpecialArgs = { inherit inputs; desktopEnvironment = de; };
             home-manager.users.kuze = import ./home/kuze/home.nix;
@@ -105,8 +104,7 @@
         ];
       };
 
-    # Single-purpose app server: a name + the service module(s). The shared
-    # base (hosts/_common/server-host.nix) supplies disk, user, network.
+    # Single-purpose app server: name + service module(s); shared base supplies disk, user, network.
     mkAppServer = { name, device ? "/dev/sda", services }:
       nixpkgs.lib.nixosSystem {
         inherit system;
@@ -130,7 +128,9 @@
       "svgmdl-outl-03" = "10.10.20.23"; "svgwdc-pape-01" = "10.20.10.10";
       "svgmdl-devl-01" = "10.10.20.40"; "desktop"        = "10.10.20.41";
       "svgmdl-rumi-01" = "10.10.20.16"; "svgmdl-alia-01" = "10.10.20.17";
+      "svgmdl-moni-01" = "10.10.20.18"; "svgmdl-caro-01" = "10.10.20.19";
       "svgwdc-svpn-01" = "10.20.10.2";
+      "svgwdc-rlay-01" = "10.20.10.20";
     };
     mkNode = name: {
       hostname = deployIPs.${name} or name;
@@ -142,9 +142,7 @@
   in {
     nixosConfigurations = {
 
-      # ── Bootable installer ISO ──────────────────────────────────────
-      # Only needed for bare-metal machines you cannot already SSH into.
-      # Everything else installs with nixos-anywhere (see README).
+      # Installer ISO — only for bare-metal you can't already SSH into; else nixos-anywhere.
       # Build: nix build .#nixosConfigurations.iso.config.system.build.isoImage
       iso = nixpkgs.lib.nixosSystem {
         inherit system;
@@ -152,12 +150,12 @@
         modules = [ ./iso ];
       };
 
-      # ── Desktops (unstable + home-manager) ──────────────────────────
+      # Desktops (unstable + home-manager)
       desktop       = mkDesktop "hyprland";
       desktop-gnome = mkDesktop "gnome";
       desktop-kde   = mkDesktop "kde";
 
-      # ── Dev workstation VM (GNOME + dev toolchain + Helium, unstable) ─
+      # Dev workstation VM (GNOME + dev toolchain + Helium, unstable)
       "svgmdl-devl-01" = nixpkgs-unstable.lib.nixosSystem {
         inherit system;
         specialArgs = { inherit inputs; };
@@ -173,13 +171,13 @@
         ];
       };
 
-      # ── Servers (stable) ────────────────────────────────────────────
+      # Servers (stable)
       "mdl-server" = mkServer { host = ./hosts/mdl-server; };
 
       # FortiGate VPN gateway (father's network) — single VM, joins headscale
       "svgwdc-svpn-01" = mkServer { host = ./hosts/svgwdc-svpn-01; };
 
-      # ── App servers — one service per VM ── STATIC IPs (no DHCP on server VLANs)
+      # App servers — one service per VM; static IPs (no DHCP on server VLANs).
       #   MDL → 10.10.20.x (gw .1, VLAN 20) · WDC → 10.20.10.x (gw .1, VLAN 110)
       "svgmdl-keyc-01" = mkAppServer { name = "svgmdl-keyc-01"; services = [ ./modules/services/keycloak   { nixit.ipv4 = "10.10.20.10/24"; nixit.pangolin.resources = [{ key = "keycloak"; name = "Keycloak"; fullDomain = "mdl.auth.li"; port = 8080; sso = false; healthPath = "/realms/master"; }]; } ]; };  # keycloak (no Pangolin SSO — self-protects; required for OIDC token exchange)
       "svgmdl-kasm-01" = mkAppServer { name = "svgmdl-kasm-01"; services = [ ./modules/services/kasm       { nixit.ipv4 = "10.10.20.14/24"; nixit.pangolin.resources = [{ key = "kasm"; name = "Kasm"; fullDomain = "office.lua.li"; port = 443; method = "https"; sso = false; healthPath = "/api/__healthcheck"; }]; } ]; };  # kasm (own auth)
@@ -190,11 +188,16 @@
       "svgmdl-immi-01" = mkAppServer { name = "svgmdl-immi-01"; services = [ ./modules/services/immich     { nixit.ipv4 = "10.10.20.13/24"; nixit.pangolin.resources = [{ key = "immich"; name = "Immich"; fullDomain = "photos.lua.li"; port = 2283; sso = false; healthPath = "/api/server/ping"; }]; nixit.nasStorage = { ip = "10.10.30.13"; mounts = [{ export = "/volume1/MDL/immich"; mountPoint = "/var/lib/immich"; }]; }; } ]; };  # immich (own auth/OIDC; media on NAS)
       "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw { nixit.ipv4 = "10.10.20.12/24"; nixit.pangolin.resources = [{ key = "excalidash"; name = "ExcaliDash"; fullDomain = "draw.lua.li"; port = 6767; sso = true; healthPath = "/health"; }]; } ]; };  # excalidash
       "svgmdl-game-01" = mkAppServer { name = "svgmdl-game-01"; services = [ ./modules/services/pelican    { nixit.ipv4 = "10.10.20.15/24"; nixit.pangolin.resources = [{ key = "pelican"; name = "Pelican"; fullDomain = "game.lua.li"; port = 8085; sso = true; healthPath = "/up"; }]; } ]; };  # pelican game panel
+      "svgmdl-caro-01" = mkAppServer { name = "svgmdl-caro-01"; services = [ ./modules/services/caroli     { nixit.ipv4 = "10.10.20.19/24"; nixit.pangolin.resources = [
+        { key = "caroli"; name = "Maler Caroli"; fullDomain = "malercaroli.lua.li"; port = 8080; sso = false; healthPath = "/"; }  # public marketing site
+        { key = "caro-db"; name = "Caroli Supabase"; fullDomain = "caro-db.lua.li"; port = 8000; sso = false; healthPath = "/auth/v1/health"; }  # self-hosted Supabase gateway (editor backend)
+      ]; } ]; };  # caroli — site + self-hosted Supabase editor backend
 
       # Paperless on the WDC (dad's) network — VLAN 110, isolated from MDL
       "svgwdc-pape-01" = mkAppServer { name = "svgwdc-pape-01"; services = [ ./modules/services/paperless  { nixit.ipv4 = "10.20.10.10/24"; nixit.gateway = "10.20.10.1"; nixit.pangolin.resources = [{ key = "paperless"; name = "Paperless"; fullDomain = "paper.lua.li"; port = 28981; sso = true; healthPath = "/accounts/login/"; }]; nixit.nasStorage = { ip = "10.10.30.110"; mounts = [{ export = "/volume1/MDL/paperless"; mountPoint = "/var/lib/paperless/media"; }]; }; } ]; };  # paperless (WDC; documents on NAS — sqlite db stays local)
+      "svgwdc-rlay-01" = mkAppServer { name = "svgwdc-rlay-01"; services = [ ./modules/services/rumi-relay { nixit.ipv4 = "10.20.10.20/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # rumi PXE relay (WDC net; LAN-only, no Pangolin)
 
-      # ── Not in this deploy batch (kept; add IPs when you bring them up) ──
+      # Not in this deploy batch — add IPs when you bring them up
       "svgmdl-head-01" = mkAppServer { name = "svgmdl-head-01"; services = [ ./modules/services/headscale ]; };  # headscale
       "svgmdl-pape-01" = mkAppServer { name = "svgmdl-pape-01"; services = [ ./modules/services/paperless ]; };  # paperless (MDL — superseded by svgwdc-pape-01)
       "svgmdl-alia-01" = mkAppServer { name = "svgmdl-alia-01"; services = [ ./modules/services/aliasvault { nixit.ipv4 = "10.10.20.17/24"; } ]; }; # aliasvault (alias.lua.li)
@@ -204,13 +207,14 @@
         { key = "rumi-customer"; name = "Rumi Customer WDC"; fullDomain = "service.wdconsulting.ch"; port = 8090; sso = false; healthPath = "/"; }  # customer-facing: own auth, no Pangolin SSO
         { key = "mesh"; name = "Rumi Mesh (Headscale)"; fullDomain = "mesh.lua.li"; port = 8091; sso = false; healthPath = "/health"; }  # Headscale coord server — direct (device auth); WS upgrades /ts2021 /derp pass through Traefik
       ]; } ]; }; # rumi (MSP mgmt + customer + Headscale mesh, built on-VM)
+      "svgmdl-moni-01" = mkAppServer { name = "svgmdl-moni-01"; services = [ ./modules/services/monitoring { nixit.ipv4 = "10.10.20.18/24"; nixit.pangolin.resources = [{ key = "gatus"; name = "Status"; fullDomain = "status.lua.li"; port = 8080; sso = false; healthPath = "/health"; hostname = "127.0.0.1"; }]; networking.interfaces.eth1.ipv4.addresses = [{ address = "10.10.10.30"; prefixLength = 24; }]; networking.interfaces.eth2.ipv4.addresses = [{ address = "10.10.30.30"; prefixLength = 24; }]; networking.interfaces.eth3.ipv4.addresses = [{ address = "10.20.10.30"; prefixLength = 24; }]; } ]; }; # monitoring — Gatus; multi-homed eth0=vlan20/eth1=vlan10/eth2=vlan30/eth3=vlan110 so probes reach every VLAN
       "svgmdl-fipa-01" = mkAppServer { name = "svgmdl-fipa-01"; services = [ ./modules/services/freeipa  { nixit.newt.enable = false; } ]; }; # FreeIPA
       "svgmdl-sada-01" = mkAppServer { name = "svgmdl-sada-01"; services = [ ./modules/services/samba-ad { nixit.newt.enable = false; } ]; }; # Samba AD
 
       # Example: add a domain controller by composing modules.
       # "dc01" = mkServer { host = ./hosts/dc01; extraModules = [ ./modules/roles/ad-dc ]; };
 
-      # ── Proxmox VM image (built, not installed — handles its own disk) ─
+      # Proxmox VM image (built, not installed — handles its own disk)
       # Build:  nix build .#proxmox-image
       # Import: qmrestore ./result/*.vma.zst <vmid> --unique true
       "proxmox-server" = nixpkgs.lib.nixosSystem {
@@ -239,13 +243,12 @@
       };
     };
 
-    # ── Push deployment (deploy-rs) ───────────────────────────────────
-    # Deploy from your workstation:  nix run github:serokell/deploy-rs -- .#mdl-server
-    # magicRollback + autoRollback are on by default: a config that breaks
-    # connectivity is automatically rolled back instead of bricking the host.
+    # Push deployment (deploy-rs): nix run github:serokell/deploy-rs -- .#mdl-server
+    # magicRollback + autoRollback on by default — a config that breaks connectivity rolls back.
     deploy.nodes = {
       "mdl-server"     = mkNode "mdl-server";
       "svgwdc-svpn-01" = mkNode "svgwdc-svpn-01";
+      "svgwdc-rlay-01" = mkNode "svgwdc-rlay-01";
       "svgmdl-keyc-01" = mkNode "svgmdl-keyc-01";
       "svgmdl-kasm-01" = mkNode "svgmdl-kasm-01";
       "svgmdl-forg-01" = mkNode "svgmdl-forg-01";
@@ -259,8 +262,10 @@
       "svgmdl-exca-01" = mkNode "svgmdl-exca-01";
       "svgmdl-alia-01" = mkNode "svgmdl-alia-01";
       "svgmdl-game-01" = mkNode "svgmdl-game-01";
+      "svgmdl-caro-01" = mkNode "svgmdl-caro-01";
       "svgmdl-mood-01" = mkNode "svgmdl-mood-01";
       "svgmdl-rumi-01" = mkNode "svgmdl-rumi-01";
+      "svgmdl-moni-01" = mkNode "svgmdl-moni-01";
       "svgmdl-fipa-01" = mkNode "svgmdl-fipa-01";
       "svgmdl-sada-01" = mkNode "svgmdl-sada-01";
       "svgmdl-devl-01" = mkNode "svgmdl-devl-01";
@@ -272,7 +277,6 @@
       (sys: deployLib: deployLib.deployChecks self.deploy)
       deploy-rs.lib;
 
-    # `nix fmt` formats the whole tree.
     formatter.${system} = nixpkgs.legacyPackages.${system}.nixfmt-rfc-style;
 
     # Convenience: nix build .#proxmox-image
