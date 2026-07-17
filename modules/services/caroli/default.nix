@@ -5,7 +5,7 @@
 { ... }:
 {
   virtualisation.oci-containers.containers.caroli = {
-    image = "ghcr.io/mydrift-user/malercaroli:1.7.0";   # pin a digest for prod
+    image = "ghcr.io/mydrift-user/malercaroli:1.9.0";   # pin a digest for prod
     ports = [ "127.0.0.1:8080:80" ];
     # No env/DB. For the Supabase-backed editor, bake VITE_SUPABASE_* at image
     # build time (docker --build-arg) and publish a new tag; nothing changes here.
