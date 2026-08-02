@@ -20,6 +20,7 @@ keys:
   - &svgmdl-fipa-01 age1kcu8js7yplyvpg62q6c3zfghkxy6s3xrq7qx5lu4xlhgw4cw9dtshylnq0
   - &svgmdl-sada-01 age1dxq3g7gc27cwhrug00eg5zllzup046l5e5r0gz9hx546ffyx7p2sj9cn78
   - &svgmdl-devl-01 age13g4qtdl2fc7j2dsd6cv49zunhyp0nme5req5axc3q7nmv07dlgfsedw57l
+  - &svgmdl-eoff-01 age1wpnrf5994qdljz5dj9eumghgf8f70qzxz3phnud2nrxv6ucmes0s9xzmnx
 
 creation_rules:
   - path_regex: secrets/common\.yaml$
@@ -47,6 +48,10 @@ creation_rules:
           - age1yajdt6w93e0wp4jm3n8f2v6cgg8vh2dt2j7j93fnzv7yyzhjs5nq5u9g86  # svgmdl-outl-02
           - age100hdlmt5thxdwuus937xartnsztgqxc2c0n25l408mx0l6umz9gq6sp82n  # svgmdl-outl-03
           - age1kz48m57euzj4yarcn8thf2lll9hx5z99d53pcl5twgh4fvgxleuqgxn6mx  # svgwdc-pape-01
+          - age1d5kmv6xwtsgwk896mn4fg9du55jy0wez7qw55hhjmx7s5qdvscuqpml5j3  # svgmdl-moni-01
+          - age1yqcxcuyu979ndvdhpngtzserg0w23yg5s4jj6r6qk49xu9zfupwqkjtp7q  # svgwdc-rlay-01
+          - age18hfl08wpe7umqrleftxlpkxducwsm477rx94kllh46dmt6tsmfssncv5qx  # svgmdl-caro-01
+          - *svgmdl-eoff-01
   - path_regex: secrets/(ad-dc|radius|mdl-server)\.yaml$
     key_groups:
       - age:
