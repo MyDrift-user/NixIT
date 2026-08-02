@@ -35,9 +35,13 @@ in {
     volumes = [ "/srv/euro-office/data:/var/lib/euro-office/documentserver" ];
   };
 
+  # The data dir is owned by the container's own user, not root: the engine
+  # runs as ds (uid 105, gid 107) from the image and creates its cache under
+  # App_Data at run time. Owned by root it fails with EACCES on every document,
+  # which surfaces in the browser only as "could not open the document".
   systemd.tmpfiles.rules = [
-    "d /srv/euro-office 0750 root root -"
-    "d /srv/euro-office/data 0750 root root -"
+    "d /srv/euro-office 0755 root root -"
+    "d /srv/euro-office/data 0750 105 107 -"
   ];
 
   # Only the Rumi VM needs the private path; the public one goes via Pangolin.
