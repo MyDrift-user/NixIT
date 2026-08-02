@@ -24,7 +24,7 @@ Only the data tree is persisted; container stdout goes to journald.
 
 ## Publishing it
 
-`newt.enable` is currently false because no Pangolin site exists for this host.
-Create the site (dashboard is TOTP-gated), put its credentials in sops under
-`newt/svgmdl-eoff-01`, drop the `newt.enable = false` override in `flake.nix`
-and redeploy. The Pangolin resource for `edit.lua.li` is already declared here.
+The Pangolin site for this host exists (`svgmdl-eoff-01`, created 2026-08-02);
+its credentials live in sops under `newt/svgmdl-eoff-01`. The dashboard is
+TOTP-gated, so creating another site needs the owner. The `edit.lua.li`
+resource is declared here and served through the tunnel.
