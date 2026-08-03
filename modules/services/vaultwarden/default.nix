@@ -5,7 +5,7 @@
 # straight directory swap; see README.md.
 { config, ... }:
 let
-  cfg = config.nixit;
+  publicHost = "vault.wdc.gmbh";
 in {
   sops.secrets."vaultwarden/env" = {
     sopsFile = ../../../secrets/common.yaml;
@@ -20,7 +20,10 @@ in {
     # RepoDigest, back up /srv/vaultwarden/data, then edit here.
     image = "vaultwarden/server@sha256:ebdfe70701c60ac0c28c697e787cea767d7972940b786037b29fe0d507f821e8";
     environment = {
-      DOMAIN = "https://vault.${cfg.serviceDomain}";
+      # Deliberately not derived from nixit.serviceDomain: the vault is
+      # published on the WDC domain, not the MDL app domain. Must match the URL
+      # clients actually use, or WebAuthn and send/attachment links break.
+      DOMAIN = "https://${publicHost}";
       # Invite-only. The admin panel creates users; nobody registers themselves.
       SIGNUPS_ALLOWED = "false";
       # Every /admin hit is logged; a brute-force attempt is otherwise silent.
@@ -31,8 +34,8 @@ in {
     };
     # Holds ADMIN_TOKEN (an Argon2id PHC string, not the plaintext).
     environmentFiles = [ config.sops.secrets."vaultwarden/env".path ];
-    # Bound to all interfaces so the vault is reachable on the LAN while the
-    # Pangolin site for vault.lua.li does not exist yet.
+    # Bound to all interfaces so the vault stays reachable on the LAN: the
+    # admin panel is blocked at the edge, so /admin is LAN-only by design.
     ports = [ "8086:80" ];
     volumes = [ "/srv/vaultwarden/data:/data" ];
   };
@@ -51,7 +54,7 @@ in {
   nixit.pangolin.resources = [{
     key = "vaultwarden";
     name = "Vaultwarden";
-    fullDomain = "vault.${cfg.serviceDomain}";
+    fullDomain = publicHost;
     port = 8086;
     # No Pangolin SSO gate. Vaultwarden authenticates its own users, and the
     # Bitwarden desktop/mobile/browser clients speak to /api and /identity
