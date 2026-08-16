@@ -1,14 +1,4 @@
-# Kasm Workspaces — host fully prepared, install is one command.
-#
-# Kasm is a multi-container platform that bootstraps its own DB/certs/admin via
-# an installer (no native module, no clean oci-containers path). So this host is
-# a hardened Docker host with everything staged — storage, ports, the admin
-# password (sops), and a `kasm-install` command — so the manual step is trivial:
-#
-#   sudo kasm-install <release-url-from-kasmweb.com/downloads>
-#
-# (or set nixit.kasm.releaseUrl and just `sudo kasm-install`). Then configure
-# OIDC + shares + the default desktop in the admin UI — see the MOTD / below.
+# Kasm — no native module; install via sudo kasm-install
 { config, lib, pkgs, ... }:
 let
   adminPw = config.sops.secrets."kasm/admin-password".path;
@@ -25,8 +15,44 @@ let
     bash kasm_release/install.sh --accept-eula --swap-size 4096 \
       --admin-password "$(cat ${adminPw})" \
       --user-password  "$(cat ${adminPw})"
+    kasm-proxy-healthcheck
     echo "Kasm installed. Admin UI: https://office.lua.li (or https://<this-host>)."
   '';
+  # Kasm ships every container with a healthcheck except its own nginx proxy,
+  # and that omission is what takes office.lua.li down. nginx resolves its
+  # upstreams once at start and caches them, so an app container that restarts
+  # onto a different address leaves the proxy answering 502 for good; autoheal
+  # repairs every other container but never sees this one. Giving the proxy a
+  # healthcheck that exercises its own upstreams lets autoheal restart it,
+  # which is how it picks the new addresses up. Measured recovery: 51 seconds.
+  #
+  # Run by kasm-install as well, because an upgrade rewrites the compose file.
+  kasm-proxy-healthcheck = pkgs.writeShellScriptBin "kasm-proxy-healthcheck" ''
+    set -euo pipefail
+    F=/opt/kasm/current/docker/docker-compose.yaml
+    [ -f "$F" ] || { echo "no compose file at $F; is Kasm installed?"; exit 1; }
+    if ${pkgs.gnugrep}/bin/grep -q "api/__healthcheck || exit 1" "$F"; then
+      echo "kasm_proxy healthcheck already present"; exit 0
+    fi
+    cp "$F" "$F.pre-healthcheck"
+    ${pkgs.gawk}/bin/awk '
+    /^  proxy:$/ { inproxy = 1 }
+    inproxy && /^    ports:$/ && !patched {
+      print "    healthcheck:"
+      print "      test: [\"CMD-SHELL\", \"curl -fsk -o /dev/null --max-time 5 https://localhost/api/__healthcheck || exit 1\"]"
+      print "      interval: 30s"
+      print "      timeout: 10s"
+      print "      retries: 3"
+      print "      start_period: 60s"
+      patched = 1
+    }
+    { print }
+    ' "$F" > "$F.new"
+    mv "$F.new" "$F"
+    echo "kasm_proxy healthcheck added; run /opt/kasm/bin/stop && /opt/kasm/bin/start to apply"
+  '';
+
+
 in {
   options.nixit.kasm.releaseUrl = lib.mkOption {
     type = lib.types.str;
@@ -40,7 +66,7 @@ in {
     systemd.tmpfiles.rules = [ "d /opt/kasm 0750 root root -" ];
     sops.secrets."kasm/admin-password".sopsFile = ../../../secrets/common.yaml;
 
-    environment.systemPackages = [ kasm-install pkgs.curl pkgs.gnutar pkgs.lsof pkgs.procps pkgs.which pkgs.iproute2 pkgs.gawk pkgs.gnused ];
+    environment.systemPackages = [ kasm-install kasm-proxy-healthcheck pkgs.curl pkgs.gnutar pkgs.lsof pkgs.procps pkgs.which pkgs.iproute2 pkgs.gawk pkgs.gnused ];
 
     users.motd = ''
       Kasm host — prepared, not yet installed.
