@@ -36,6 +36,17 @@ in {
       default = "headscale";
       description = "Keycloak client id (realm nixit.realm). Redirect URI: https://<publicHost>/oidc/callback.";
     };
+    oidcIssuer = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "https://login.microsoftonline.com/<tenant-id>/v2.0";
+      description = "OIDC issuer. null = the Keycloak realm (nixit.authUrl/realms/nixit.realm). Set for Entra ID or any other IdP.";
+    };
+    oidcAllowedDomains = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Only users whose email domain is listed may log in (empty = everyone the IdP lets through).";
+    };
     oidcSecretKey = lib.mkOption {
       type = lib.types.str;
       default = "headscale/oidc-client-secret";
@@ -90,8 +101,9 @@ in {
         dns.nameservers.split = hs.splitDns;
         dns.search_domains = hs.searchDomains;
         oidc = {
-          issuer = "${cfg.authUrl}/realms/${cfg.realm}";
+          issuer = if hs.oidcIssuer != null then hs.oidcIssuer else "${cfg.authUrl}/realms/${cfg.realm}";
           client_id = hs.oidcClientId;
+          allowed_domains = hs.oidcAllowedDomains;
           client_secret_path = config.sops.secrets.${hs.oidcSecretKey}.path;
           scope = [ "openid" "profile" "email" ];
         };
