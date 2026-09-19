@@ -119,6 +119,12 @@
         ] ++ services;
       };
 
+    # WDC tailnet: what employees reach through the svgwdc-head-01 router, and the printers
+    # behind the remote-site Pi (fill in as they are known; each entry is a /32).
+    wdcResources = [ "10.20.10.11/32" "10.20.10.12/32" "10.20.10.13/32" "192.168.17.10/32" "192.168.17.11/32" "192.168.17.35/32" "192.168.17.36/32" "192.168.17.37/32" "192.168.17.38/32" "192.168.17.39/32" "192.168.17.40/32" "192.168.17.42/32" ];
+    wdcRemotePrinters = [ ];
+    lib = nixpkgs.lib;
+
     # Reachable IPs per host (deploy-rs connects here; bare hostnames don't resolve).
     deployIPs = {
       "svgmdl-keyc-01" = "10.10.20.10"; "svgmdl-forg-01" = "10.10.20.11";
@@ -199,7 +205,19 @@
       # Paperless on the WDC (dad's) network — VLAN 110, isolated from MDL
       "svgwdc-pape-01" = mkAppServer { name = "svgwdc-pape-01"; services = [ ./modules/services/paperless  { nixit.ipv4 = "10.20.10.10/24"; nixit.gateway = "10.20.10.1"; nixit.pangolin.resources = [{ key = "paperless"; name = "Paperless"; fullDomain = "paper.lua.li"; port = 28981; sso = true; healthPath = "/accounts/login/"; }]; nixit.nasStorage = { ip = "10.10.30.110"; mounts = [{ export = "/volume1/MDL/paperless"; mountPoint = "/var/lib/paperless/media"; }]; }; } ]; };  # paperless (WDC; documents on NAS — sqlite db stays local)
       "svgwdc-rlay-01" = mkAppServer { name = "svgwdc-rlay-01"; services = [ ./modules/services/rumi-relay { nixit.ipv4 = "10.20.10.20/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # rumi PXE relay (WDC net; LAN-only, no Pangolin)
-      "svgwdc-head-01" = mkAppServer { name = "svgwdc-head-01"; services = [ ./modules/services/headscale  { nixit.ipv4 = "10.20.10.15/24"; nixit.gateway = "10.20.10.1"; nixit.headscale = { publicHost = "access.wdc.gmbh"; baseDomain = "ts.wdc.gmbh"; oidcIssuer = "https://login.microsoftonline.com/44ed7af5-e693-49a2-a4a8-3d1eed5bf3ae/v2.0"; oidcClientId = "1e7fb8e1-5d29-47b0-bd11-41f9f2ce4881"; oidcSecretKey = "headscale/oidc-client-secret-wdc-entra"; oidcAllowedDomains = [ "wdconsulting.ch" ]; splitDns."corp.wdconsulting.ch" = [ "10.20.10.11" "10.20.10.12" ]; searchDomains = [ "corp.wdconsulting.ch" ]; subnetRouter.routes = [ "10.20.10.11/32" "10.20.10.12/32" "10.20.10.13/32" "192.168.17.10/32" "192.168.17.11/32" "192.168.17.35/32" "192.168.17.36/32" "192.168.17.37/32" "192.168.17.38/32" "192.168.17.39/32" "192.168.17.40/32" "192.168.17.42/32" ]; }; nixit.pangolin.resources = [{ key = "headscale-wdc"; name = "WDC Access (Headscale)"; fullDomain = "access.wdc.gmbh"; port = 8080; sso = false; healthPath = "/health"; }]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
+      "svgwdc-head-01" = mkAppServer { name = "svgwdc-head-01"; services = [ ./modules/services/headscale  { nixit.ipv4 = "10.20.10.15/24"; nixit.gateway = "10.20.10.1"; nixit.headscale = { publicHost = "access.wdc.gmbh"; baseDomain = "ts.wdc.gmbh"; oidcIssuer = "https://login.microsoftonline.com/44ed7af5-e693-49a2-a4a8-3d1eed5bf3ae/v2.0"; oidcClientId = "1e7fb8e1-5d29-47b0-bd11-41f9f2ce4881"; oidcSecretKey = "headscale/oidc-client-secret-wdc-entra"; oidcAllowedDomains = [ "wdconsulting.ch" ]; splitDns."corp.wdconsulting.ch" = [ "10.20.10.11" "10.20.10.12" ]; searchDomains = [ "corp.wdconsulting.ch" ]; subnetRouter = { routes = wdcResources; tag = "tag:router"; };
+        policy = {
+          # employees = every device that logged in through Entra (untagged). Servers and the
+          # remote-printer Pi are tagged and therefore outside autogroup:member.
+          tagOwners = { "tag:router" = [ "infra@" ]; "tag:printserver" = [ "infra@" ]; "tag:remote-printer" = [ "infra@" ]; };
+          autoApprovers.routes = builtins.listToAttrs (map (r: { name = r; value = [ "tag:router" ]; }) wdcResources)
+            // builtins.listToAttrs (map (r: { name = r; value = [ "tag:remote-printer" ]; }) wdcRemotePrinters);
+          acls = [
+            { action = "accept"; src = [ "autogroup:member" ]; dst = map (r: "${r}:*") wdcResources; }   # employees -> DCs, print server, NAS boxes, office printers
+          ] ++ lib.optional (wdcRemotePrinters != [ ]) {
+            action = "accept"; src = [ "tag:printserver" ]; dst = map (r: "${r}:*") wdcRemotePrinters;   # print server -> printers behind the remote Pi, nothing else
+          };
+        }; }; nixit.pangolin.resources = [{ key = "headscale-wdc"; name = "WDC Access (Headscale)"; fullDomain = "access.wdc.gmbh"; port = 8080; sso = false; healthPath = "/health"; }]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
 
       # Not in this deploy batch — add IPs when you bring them up
       "svgmdl-head-01" = mkAppServer { name = "svgmdl-head-01"; services = [ ./modules/services/headscale ]; };  # headscale

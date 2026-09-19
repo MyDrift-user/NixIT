@@ -63,6 +63,15 @@ in {
       default = [ ];
       description = "Search domains pushed to every client, so short AD names resolve.";
     };
+    policy = lib.mkOption {
+      type = lib.types.nullOr lib.types.attrs;
+      default = null;
+      description = ''
+        Headscale ACL policy (v2, rendered to JSON, mode "file"). null = no policy, every node
+        reaches every node. Users are written as "name@" or as their email; tagged nodes leave
+        autogroup:member.
+      '';
+    };
     subnetRouter = {
       routes = lib.mkOption {
         type = lib.types.listOf lib.types.str;
@@ -78,6 +87,12 @@ in {
         type = lib.types.str;
         default = "infra";
         description = "Headscale user that owns the subnet-router node (created if missing).";
+      };
+      tag = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "tag:router";
+        description = "Forced tag put on the router node after enrolment, so ACLs can address it and it drops out of autogroup:member.";
       };
     };
   };
@@ -100,6 +115,10 @@ in {
         dns.nameservers.global = [ "1.1.1.1" "9.9.9.9" ];   # required since 0.27 when override_local_dns is on
         dns.nameservers.split = hs.splitDns;
         dns.search_domains = hs.searchDomains;
+        policy = lib.mkIf (hs.policy != null) {
+          mode = "file";
+          path = pkgs.writeText "headscale-policy.json" (builtins.toJSON hs.policy);
+        };
         oidc = {
           issuer = if hs.oidcIssuer != null then hs.oidcIssuer else "${cfg.authUrl}/realms/${cfg.realm}";
           client_id = hs.oidcClientId;
@@ -153,6 +172,9 @@ in {
         self=$(tailscale status --json | jq -r '.Self.HostName')
         nid=$(headscale nodes list -o json | jq -r --arg h "$self" '(. // []) | .[] | select(.name==$h or .given_name==$h) | .id' | head -1)
         [ -n "$nid" ] && headscale nodes approve-routes --identifier "$nid" --routes "${routes}" >/dev/null
+        ${lib.optionalString (hs.subnetRouter.tag != null) ''
+        [ -n "$nid" ] && headscale nodes tag --identifier "$nid" --tags "${hs.subnetRouter.tag}" >/dev/null
+        ''}
       '';
     };
   };
