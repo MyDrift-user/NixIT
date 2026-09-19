@@ -122,7 +122,7 @@
     # WDC tailnet: what employees reach through the svgwdc-head-01 router, and the printers
     # behind the remote-site Pi (fill in as they are known; each entry is a /32).
     wdcResources = [ "10.20.10.11/32" "10.20.10.12/32" "10.20.10.13/32" "192.168.17.10/32" "192.168.17.11/32" "192.168.17.35/32" "192.168.17.36/32" "192.168.17.37/32" "192.168.17.38/32" "192.168.17.39/32" "192.168.17.40/32" "192.168.17.42/32" ];
-    wdcRemotePrinters = [ ];
+    wdcRemotePrinters = [ "10.10.10.10/32" ];   # printer at the remote site, behind the Pi (tag:remote-printer); overlaps MDL VLAN 10 but is only routed for tag:printserver
     lib = nixpkgs.lib;
 
     # Reachable IPs per host (deploy-rs connects here; bare hostnames don't resolve).
