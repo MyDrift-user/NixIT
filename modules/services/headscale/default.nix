@@ -61,16 +61,21 @@ in {
   };
 
   config = {
-    sops.secrets.${hs.oidcSecretKey}.sopsFile = ../../../secrets/common.yaml;
+    sops.secrets.${hs.oidcSecretKey} = {
+      sopsFile = ../../../secrets/common.yaml;
+      owner = "headscale";   # the unit runs as its own user
+      restartUnits = [ "headscale.service" ];
+    };
 
     services.headscale = {
       enable = true;
-      address = "0.0.0.0";
+      address = "[::]";   # dual-stack: newt's health check dials localhost as ::1 first
       port = 8080;
       settings = {
         server_url = serverUrl;
         dns.base_domain = hs.baseDomain;   # MagicDNS tailnet domain (distinct from server_url)
         dns.magic_dns = true;
+        dns.nameservers.global = [ "1.1.1.1" "9.9.9.9" ];   # required since 0.27 when override_local_dns is on
         oidc = {
           issuer = "${cfg.authUrl}/realms/${cfg.realm}";
           client_id = hs.oidcClientId;
@@ -109,9 +114,9 @@ in {
           sleep 2
         done
         if [ "$(tailscale status --json 2>/dev/null | jq -r '.BackendState' 2>/dev/null || echo NoState)" != "Running" ]; then
-          headscale users list -o json | jq -e --arg u "$user" '.[] | select(.name==$u)' >/dev/null \
+          headscale users list -o json | jq -e --arg u "$user" '(. // []) | .[] | select(.name==$u)' >/dev/null \
             || headscale users create "$user" >/dev/null
-          uid=$(headscale users list -o json | jq -r --arg u "$user" '.[] | select(.name==$u) | .id')
+          uid=$(headscale users list -o json | jq -r --arg u "$user" '(. // []) | .[] | select(.name==$u) | .id')
           key=$(headscale preauthkeys create --user "$uid" --expiration 15m -o json | jq -r '.key')
           tailscale up --login-server="${serverUrl}" --authkey="$key" \
             --hostname="${config.networking.hostName}" \
@@ -119,7 +124,7 @@ in {
         fi
         # approve the advertised routes for this node (idempotent)
         self=$(tailscale status --json | jq -r '.Self.HostName')
-        nid=$(headscale nodes list -o json | jq -r --arg h "$self" '.[] | select(.name==$h or .given_name==$h) | .id' | head -1)
+        nid=$(headscale nodes list -o json | jq -r --arg h "$self" '(. // []) | .[] | select(.name==$h or .given_name==$h) | .id' | head -1)
         [ -n "$nid" ] && headscale nodes approve-routes --identifier "$nid" --routes "${routes}" >/dev/null
       '';
     };
