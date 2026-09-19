@@ -122,7 +122,9 @@ in {
             --hostname="${config.networking.hostName}" \
             --advertise-routes="${routes}" --accept-dns=false
         fi
-        # approve the advertised routes for this node (idempotent)
+        # keep the advertised set in sync with the config, then approve it (idempotent;
+        # approve-routes replaces the approved list, so dropped routes are withdrawn)
+        tailscale set --advertise-routes="${routes}"
         self=$(tailscale status --json | jq -r '.Self.HostName')
         nid=$(headscale nodes list -o json | jq -r --arg h "$self" '(. // []) | .[] | select(.name==$h or .given_name==$h) | .id' | head -1)
         [ -n "$nid" ] && headscale nodes approve-routes --identifier "$nid" --routes "${routes}" >/dev/null
