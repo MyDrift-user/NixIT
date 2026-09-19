@@ -22,6 +22,7 @@ keys:
   - &svgmdl-devl-01 age13g4qtdl2fc7j2dsd6cv49zunhyp0nme5req5axc3q7nmv07dlgfsedw57l
   - &svgmdl-eoff-01 age1wpnrf5994qdljz5dj9eumghgf8f70qzxz3phnud2nrxv6ucmes0s9xzmnx
   - &svgmdl-vwrd-01 age1rdzve2jrup6z45cmwkas8dz2yaemclcdlsm7mqezvw964dtq2yqs0ntl0p
+  - &svgwdc-head-01 age1yzf7tvc5sgn8jcu73fvhvf3r5w55gax09zvqpav25vt3lpyld5kqkkvnt2
 
 creation_rules:
   - path_regex: secrets/common\.yaml$
@@ -54,6 +55,7 @@ creation_rules:
           - age18hfl08wpe7umqrleftxlpkxducwsm477rx94kllh46dmt6tsmfssncv5qx  # svgmdl-caro-01
           - *svgmdl-eoff-01
           - *svgmdl-vwrd-01
+          - *svgwdc-head-01
   - path_regex: secrets/(ad-dc|radius|mdl-server)\.yaml$
     key_groups:
       - age:

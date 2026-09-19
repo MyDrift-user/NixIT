@@ -131,6 +131,7 @@
       "svgmdl-moni-01" = "10.10.20.18"; "svgmdl-caro-01" = "10.10.20.19";
       "svgwdc-svpn-01" = "10.20.10.2";
       "svgwdc-rlay-01" = "10.20.10.20";
+      "svgwdc-head-01" = "10.20.10.15";
       "svgmdl-eoff-01" = "10.10.20.24";
       "svgmdl-vwrd-01" = "10.10.20.25";
     };
@@ -198,6 +199,7 @@
       # Paperless on the WDC (dad's) network — VLAN 110, isolated from MDL
       "svgwdc-pape-01" = mkAppServer { name = "svgwdc-pape-01"; services = [ ./modules/services/paperless  { nixit.ipv4 = "10.20.10.10/24"; nixit.gateway = "10.20.10.1"; nixit.pangolin.resources = [{ key = "paperless"; name = "Paperless"; fullDomain = "paper.lua.li"; port = 28981; sso = true; healthPath = "/accounts/login/"; }]; nixit.nasStorage = { ip = "10.10.30.110"; mounts = [{ export = "/volume1/MDL/paperless"; mountPoint = "/var/lib/paperless/media"; }]; }; } ]; };  # paperless (WDC; documents on NAS — sqlite db stays local)
       "svgwdc-rlay-01" = mkAppServer { name = "svgwdc-rlay-01"; services = [ ./modules/services/rumi-relay { nixit.ipv4 = "10.20.10.20/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # rumi PXE relay (WDC net; LAN-only, no Pangolin)
+      "svgwdc-head-01" = mkAppServer { name = "svgwdc-head-01"; services = [ ./modules/services/headscale  { nixit.ipv4 = "10.20.10.15/24"; nixit.gateway = "10.20.10.1"; nixit.headscale = { publicHost = "access.wdc.gmbh"; baseDomain = "ts.wdc.gmbh"; oidcClientId = "headscale-wdc"; oidcSecretKey = "headscale/oidc-client-secret-wdc"; subnetRouter.routes = [ "10.20.10.0/24" ]; }; nixit.pangolin.resources = [{ key = "headscale-wdc"; name = "WDC Access (Headscale)"; fullDomain = "access.wdc.gmbh"; port = 8080; sso = false; healthPath = "/health"; }]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
 
       # Not in this deploy batch — add IPs when you bring them up
       "svgmdl-head-01" = mkAppServer { name = "svgmdl-head-01"; services = [ ./modules/services/headscale ]; };  # headscale
@@ -253,6 +255,7 @@
       "mdl-server"     = mkNode "mdl-server";
       "svgwdc-svpn-01" = mkNode "svgwdc-svpn-01";
       "svgwdc-rlay-01" = mkNode "svgwdc-rlay-01";
+      "svgwdc-head-01" = mkNode "svgwdc-head-01";
       "svgmdl-keyc-01" = mkNode "svgmdl-keyc-01";
       "svgmdl-kasm-01" = mkNode "svgmdl-kasm-01";
       "svgmdl-forg-01" = mkNode "svgmdl-forg-01";
