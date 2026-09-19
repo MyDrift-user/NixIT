@@ -41,6 +41,17 @@ in {
       default = "headscale/oidc-client-secret";
       description = "sops key in secrets/common.yaml holding the Keycloak client secret.";
     };
+    splitDns = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+      default = { };
+      example = { "corp.example.ch" = [ "10.0.0.11" "10.0.0.12" ]; };
+      description = "Split DNS pushed to every client: queries for these domains go to the listed resolvers over the tailnet (reach them through a subnet route).";
+    };
+    searchDomains = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Search domains pushed to every client, so short AD names resolve.";
+    };
     subnetRouter = {
       routes = lib.mkOption {
         type = lib.types.listOf lib.types.str;
@@ -76,6 +87,8 @@ in {
         dns.base_domain = hs.baseDomain;   # MagicDNS tailnet domain (distinct from server_url)
         dns.magic_dns = true;
         dns.nameservers.global = [ "1.1.1.1" "9.9.9.9" ];   # required since 0.27 when override_local_dns is on
+        dns.nameservers.split = hs.splitDns;
+        dns.search_domains = hs.searchDomains;
         oidc = {
           issuer = "${cfg.authUrl}/realms/${cfg.realm}";
           client_id = hs.oidcClientId;
