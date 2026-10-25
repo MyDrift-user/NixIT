@@ -16,12 +16,12 @@ let
     ssl = true;
     auth = { "sso-enabled" = r.sso; } // lib.optionalAttrs r.sso { "sso-roles" = [ "Member" ]; };
     targets = [{
-      hostname = "localhost";
+      hostname = r.hostname;
       method = r.method;
       port = r.port;
       healthcheck = {
         enabled = true;
-        hostname = "localhost";
+        hostname = r.hostname;
         path = r.healthPath;
         method = "GET";
         port = r.port;
@@ -82,8 +82,8 @@ in {
       description = ''
         Pangolin resources for this host, applied declaratively via the newt
         blueprint (incl. simple HTTP health checks). Each entry maps a public
-        domain to a local service port on this VM. Targets are always localhost
-        (newt runs --network=host on the service VM).
+        domain to a local service port on this VM. Targets default to localhost
+        (newt runs --network=host on the service VM); see `hostname`.
       '';
       type = lib.types.listOf (lib.types.submodule {
         options = {
@@ -91,6 +91,7 @@ in {
           name = lib.mkOption { type = lib.types.str; description = "Display name in Pangolin."; };
           fullDomain = lib.mkOption { type = lib.types.str; description = "Public domain, e.g. git.lua.li."; };
           port = lib.mkOption { type = lib.types.int; description = "Local service port on this VM."; };
+          hostname = lib.mkOption { type = lib.types.str; default = "localhost"; description = "Target host as newt sees it. Another LAN address when this VM's newt fronts an appliance that cannot run newt itself."; };
           method = lib.mkOption { type = lib.types.enum [ "http" "https" ]; default = "http"; description = "Upstream scheme."; };
           sso = lib.mkOption { type = lib.types.bool; default = true; description = "Gate behind Pangolin SSO (Member role). Off for apps with their own auth."; };
           healthPath = lib.mkOption { type = lib.types.str; default = "/"; description = "Health-check path (must return healthStatus)."; };

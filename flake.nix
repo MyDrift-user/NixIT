@@ -220,7 +220,9 @@
           ] ++ lib.optional (wdcRemotePrinters != [ ]) {
             action = "accept"; src = [ "tag:printserver" ]; dst = map (r: "${r}:*") wdcRemotePrinters;   # print server -> printers behind the remote Pi, nothing else
           };
-        }; }; nixit.pangolin.resources = [{ key = "headscale-wdc"; name = "WDC Access (Headscale)"; fullDomain = "access.wdc.gmbh"; port = 8080; sso = false; healthPath = "/health"; }]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
+        }; }; nixit.pangolin.resources = [{ key = "headscale-wdc"; name = "WDC Access (Headscale)"; fullDomain = "access.wdc.gmbh"; port = 8080; sso = false; healthPath = "/health"; }
+          { key = "homeassistant-wdc"; name = "WDC Home Assistant"; fullDomain = "ha.wdc.gmbh"; hostname = "10.20.10.18"; port = 80; healthPath = "/manifest.json"; }  # HAOS VM 318 cannot run newt; Pangolin SSO on until HA's own login is trusted
+        ]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
       "svgwdc-web-01" = mkAppServer { name = "svgwdc-web-01"; services = [ ./modules/services/wd-web { nixit.ipv4 = "10.20.10.16/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # WD Gruppe websites, one port per company (LAN only until the domains are set)
       "svgwdc-kdma-01" = mkAppServer { name = "svgwdc-kdma-01"; services = [ ./modules/services/kodama { nixit.ipv4 = "10.20.10.17/24"; nixit.gateway = "10.20.10.1"; } ]; };  # Kodama test instance (niwa compose, images from wsmdp-001)
 
