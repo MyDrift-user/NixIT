@@ -16,9 +16,9 @@ in {
     # Pinned by digest, not by tag. :latest moves on every upstream release and
     # this container owns everybody's passwords: an unnoticed major bump can
     # migrate the SQLite schema forward with no way back. Digest below is
-    # v1.37.1. To bump: docker manifest inspect / docker pull, take the
+    # v1.37.3. To bump: docker manifest inspect / docker pull, take the
     # RepoDigest, back up /srv/vaultwarden/data, then edit here.
-    image = "vaultwarden/server@sha256:ebdfe70701c60ac0c28c697e787cea767d7972940b786037b29fe0d507f821e8";
+    image = "vaultwarden/server@sha256:1587c45feaa479f1f5e8af3b00eded36bff77bcf1880cf8dbf0541706dd470e0";
     environment = {
       # Deliberately not derived from nixit.serviceDomain: the vault is
       # published on the WDC domain, not the MDL app domain. Must match the URL
@@ -62,5 +62,15 @@ in {
     # client that is not a browser.
     sso = false;
     healthPath = "/alive";
+    # /admin is LAN-only, and the vault answers only from CH, IT and DE. The
+    # Bitwarden clients hit /api and /identity on this same resource, so a
+    # user roaming elsewhere is locked out of the apps too.
+    rules = [
+      { action = "deny";  match = "path";    value = "/admin*"; }
+      { action = "allow"; match = "country"; value = "CH"; }
+      { action = "allow"; match = "country"; value = "IT"; }
+      { action = "allow"; match = "country"; value = "DE"; }
+      { action = "deny";  match = "country"; value = "ALL"; }
+    ];
   }];
 }

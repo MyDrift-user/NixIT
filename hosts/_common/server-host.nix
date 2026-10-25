@@ -29,6 +29,10 @@ let
         status = r.healthStatus;
       };
     }];
+  } // lib.optionalAttrs (r.rules != [ ]) {
+    # Pangolin syncs a resource's rules to this list on every newt connect and
+    # deletes the ones not listed, so edge rules must live here, not in the UI.
+    rules = lib.imap1 (i: rule: rule // { priority = i; }) r.rules;
   };
   blueprint = {
     "public-resources" =
@@ -91,6 +95,17 @@ in {
           sso = lib.mkOption { type = lib.types.bool; default = true; description = "Gate behind Pangolin SSO (Member role). Off for apps with their own auth."; };
           healthPath = lib.mkOption { type = lib.types.str; default = "/"; description = "Health-check path (must return healthStatus)."; };
           healthStatus = lib.mkOption { type = lib.types.int; default = 200; description = "Expected health-check HTTP status."; };
+          rules = lib.mkOption {
+            type = lib.types.listOf (lib.types.submodule {
+              options = {
+                action = lib.mkOption { type = lib.types.enum [ "allow" "deny" "pass" ]; description = "allow = ACCEPT (bypass auth), deny = DROP, pass = on to auth."; };
+                match = lib.mkOption { type = lib.types.enum [ "path" "country" "cidr" "ip" "asn" ]; };
+                value = lib.mkOption { type = lib.types.str; description = "Path glob, 2-letter country code or ALL, CIDR, IP or AS<n>."; };
+              };
+            });
+            default = [ ];
+            description = "Edge access rules, first match wins in list order. Empty = no rules (and any set in the UI are removed).";
+          };
         };
       });
     };
