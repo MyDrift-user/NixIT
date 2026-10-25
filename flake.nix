@@ -138,8 +138,11 @@
       "svgwdc-svpn-01" = "10.20.10.2";
       "svgwdc-rlay-01" = "10.20.10.20";
       "svgwdc-head-01" = "10.20.10.15";
+      "svgwdc-web-01" = "10.20.10.16";
+      "svgwdc-kdma-01" = "10.20.10.17";
       "svgmdl-eoff-01" = "10.10.20.24";
       "svgmdl-vwrd-01" = "10.10.20.25";
+      "svgmdl-fafu-01" = "10.10.20.26";
     };
     mkNode = name: {
       hostname = deployIPs.${name} or name;
@@ -218,6 +221,8 @@
             action = "accept"; src = [ "tag:printserver" ]; dst = map (r: "${r}:*") wdcRemotePrinters;   # print server -> printers behind the remote Pi, nothing else
           };
         }; }; nixit.pangolin.resources = [{ key = "headscale-wdc"; name = "WDC Access (Headscale)"; fullDomain = "access.wdc.gmbh"; port = 8080; sso = false; healthPath = "/health"; }]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
+      "svgwdc-web-01" = mkAppServer { name = "svgwdc-web-01"; services = [ ./modules/services/wd-web { nixit.ipv4 = "10.20.10.16/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # WD Gruppe websites, one port per company (LAN only until the domains are set)
+      "svgwdc-kdma-01" = mkAppServer { name = "svgwdc-kdma-01"; services = [ ./modules/services/kodama { nixit.ipv4 = "10.20.10.17/24"; nixit.gateway = "10.20.10.1"; } ]; };  # Kodama test instance (niwa compose, images from wsmdp-001)
 
       # Not in this deploy batch — add IPs when you bring them up
       "svgmdl-head-01" = mkAppServer { name = "svgmdl-head-01"; services = [ ./modules/services/headscale ]; };  # headscale
@@ -230,6 +235,7 @@
         { key = "mesh"; name = "Rumi Mesh (Headscale)"; fullDomain = "mesh.lua.li"; port = 8091; sso = false; healthPath = "/health"; }  # Headscale coord server — direct (device auth); WS upgrades /ts2021 /derp pass through Traefik
       ]; } ]; }; # rumi (MSP mgmt + customer + Headscale mesh, built on-VM)
       "svgmdl-eoff-01" = mkAppServer { name = "svgmdl-eoff-01"; services = [ ./modules/services/euro-office { nixit.ipv4 = "10.10.20.24/24"; } ]; };  # euro-office document engine (edit.lua.li) — Rumi document preview/edit
+      "svgmdl-fafu-01" = mkAppServer { name = "svgmdl-fafu-01"; services = [ ./modules/services/faustoandfurio { nixit.ipv4 = "10.10.20.26/24"; } ]; };  # faustoandfurio.ch WordPress (www + root redirect)
       "svgmdl-vwrd-01" = mkAppServer { name = "svgmdl-vwrd-01"; services = [ ./modules/services/vaultwarden { nixit.ipv4 = "10.10.20.25/24"; } ]; };  # vaultwarden password server (vault.lua.li)
       "svgmdl-moni-01" = mkAppServer { name = "svgmdl-moni-01"; services = [ ./modules/services/monitoring { nixit.ipv4 = "10.10.20.18/24"; nixit.pangolin.resources = [{ key = "gatus"; name = "Status"; fullDomain = "status.lua.li"; port = 8080; sso = false; healthPath = "/health"; hostname = "127.0.0.1"; }]; networking.interfaces.eth1.ipv4.addresses = [{ address = "10.10.10.30"; prefixLength = 24; }]; networking.interfaces.eth2.ipv4.addresses = [{ address = "10.10.30.30"; prefixLength = 24; }]; networking.interfaces.eth3.ipv4.addresses = [{ address = "10.20.10.30"; prefixLength = 24; }]; } ]; }; # monitoring — Gatus; multi-homed eth0=vlan20/eth1=vlan10/eth2=vlan30/eth3=vlan110 so probes reach every VLAN
       "svgmdl-fipa-01" = mkAppServer { name = "svgmdl-fipa-01"; services = [ ./modules/services/freeipa  { nixit.newt.enable = false; } ]; }; # FreeIPA
@@ -274,6 +280,8 @@
       "svgwdc-svpn-01" = mkNode "svgwdc-svpn-01";
       "svgwdc-rlay-01" = mkNode "svgwdc-rlay-01";
       "svgwdc-head-01" = mkNode "svgwdc-head-01";
+      "svgwdc-web-01" = mkNode "svgwdc-web-01";
+      "svgwdc-kdma-01" = mkNode "svgwdc-kdma-01";
       "svgmdl-keyc-01" = mkNode "svgmdl-keyc-01";
       "svgmdl-kasm-01" = mkNode "svgmdl-kasm-01";
       "svgmdl-forg-01" = mkNode "svgmdl-forg-01";
@@ -286,6 +294,7 @@
       "svgmdl-head-01" = mkNode "svgmdl-head-01";
       "svgmdl-eoff-01" = mkNode "svgmdl-eoff-01";
       "svgmdl-vwrd-01" = mkNode "svgmdl-vwrd-01";
+      "svgmdl-fafu-01" = mkNode "svgmdl-fafu-01";
       "svgmdl-exca-01" = mkNode "svgmdl-exca-01";
       "svgmdl-alia-01" = mkNode "svgmdl-alia-01";
       "svgmdl-game-01" = mkNode "svgmdl-game-01";
