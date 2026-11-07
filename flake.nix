@@ -140,6 +140,7 @@
       "svgwdc-head-01" = "10.20.10.15";
       "svgwdc-web-01" = "10.20.10.16";
       "svgwdc-kdma-01" = "10.20.10.17";
+      "svgwdc-dvls-01" = "10.20.10.19";
       "svgmdl-eoff-01" = "10.10.20.24";
       "svgmdl-vwrd-01" = "10.10.20.25";
       "svgmdl-fafu-01" = "10.10.20.26";
@@ -225,6 +226,7 @@
         ]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
       "svgwdc-web-01" = mkAppServer { name = "svgwdc-web-01"; services = [ ./modules/services/wd-web { nixit.ipv4 = "10.20.10.16/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # WD Gruppe websites, one port per company (LAN only until the domains are set)
       "svgwdc-kdma-01" = mkAppServer { name = "svgwdc-kdma-01"; services = [ ./modules/services/kodama { nixit.ipv4 = "10.20.10.17/24"; nixit.gateway = "10.20.10.1"; } ]; };  # Kodama test instance (niwa compose, images from wsmdp-001)
+      "svgwdc-dvls-01" = mkAppServer { name = "svgwdc-dvls-01"; services = [ ./modules/services/devolutions-server { nixit.ipv4 = "10.20.10.19/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # Devolutions Server for Remote Desktop Manager (LAN only, no Pangolin)
 
       # Not in this deploy batch — add IPs when you bring them up
       "svgmdl-head-01" = mkAppServer { name = "svgmdl-head-01"; services = [ ./modules/services/headscale ]; };  # headscale
@@ -284,6 +286,7 @@
       "svgwdc-head-01" = mkNode "svgwdc-head-01";
       "svgwdc-web-01" = mkNode "svgwdc-web-01";
       "svgwdc-kdma-01" = mkNode "svgwdc-kdma-01";
+      "svgwdc-dvls-01" = mkNode "svgwdc-dvls-01";
       "svgmdl-keyc-01" = mkNode "svgmdl-keyc-01";
       "svgmdl-kasm-01" = mkNode "svgmdl-kasm-01";
       "svgmdl-forg-01" = mkNode "svgmdl-forg-01";
