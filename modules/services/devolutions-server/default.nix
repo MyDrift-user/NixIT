@@ -1,5 +1,5 @@
 # Devolutions Server (the shared backend of Remote Desktop Manager) with its own PostgreSQL,
-# LAN only: no newt, no Pangolin resource. https://<host> with the image's self-signed certificate.
+# LAN only: no newt, no Pangolin resource. https://<name> (and the IP) with a self-signed certificate made below.
 #
 # Data: /srv/dvls/app_data (encryption.config), /srv/dvls/certs and /srv/dvls/db (PostgreSQL datadir).
 # The vault's data cannot be decrypted without encryption.config; a copy is in rumi.
@@ -13,6 +13,8 @@ let
   # Pinned by digest like vaultwarden: this container owns passwords and migrates its schema on start.
   image = "devolutions/devolutions-server:2026.3.13.0@sha256:12c05097f4ad5a3e0ffe1d00c0b4855e24369b7e33becaab5a0072e49024a4a3";
   host = "10.20.10.19";
+  # A record in AD DNS (corp.wdconsulting.ch) pointing at host.
+  name = "rdm.corp.wdconsulting.ch";
   docker = "${config.virtualisation.docker.package}/bin/docker";
   envFile = config.sops.secrets."dvls/env".path;
   environment = {
@@ -20,12 +22,12 @@ let
     DATABASE_HOST = "db";
     DATABASE_NAME = "dvls";
     DATABASE_USERNAME = "dvls";
-    HOSTNAME = host;
+    HOSTNAME = name;
     WEB_SCHEME = "https";
     PORT = "5000";
     EXTERNAL_WEB_SCHEME = "https";
     EXTERNAL_WEB_PORT = "443";
-    EXTERNAL_WEB_HOSTNAME = host;
+    EXTERNAL_WEB_HOSTNAME = name;
     TLS_CERTIFICATE_FILE = "/opt/devolutions/dvls/certs/server.pem";
     TLS_PRIVATE_KEY_FILE = "/opt/devolutions/dvls/certs/server.key";
   };
@@ -44,11 +46,13 @@ in {
     wantedBy = [ "multi-user.target" ];
     serviceConfig = { Type = "oneshot"; RemainAfterExit = true; };
     # The image makes a new self-signed certificate on every start, which clients would have to
-    # trust again each time, so one is generated here once and mounted.
+    # trust again each time, so one is generated here once and mounted. A new one only when the
+    # name is missing from it (the first one carried the IP only).
     script = ''
       ${docker} network inspect ${net} >/dev/null 2>&1 || ${docker} network create ${net}
-      [ -f /srv/dvls/certs/server.pem ] || ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
-        -keyout /srv/dvls/certs/server.key -out /srv/dvls/certs/server.pem -subj "/CN=${host}" -addext "subjectAltName=IP:${host}"
+      ${pkgs.openssl}/bin/openssl x509 -in /srv/dvls/certs/server.pem -noout -checkhost ${name} 2>/dev/null | grep -q 'does match' \
+        || ${pkgs.openssl}/bin/openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+          -keyout /srv/dvls/certs/server.key -out /srv/dvls/certs/server.pem -subj "/CN=${name}" -addext "subjectAltName=DNS:${name},IP:${host}"
     '';
   };
 
