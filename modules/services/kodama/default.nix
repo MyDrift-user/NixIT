@@ -19,8 +19,27 @@ in {
   systemd.tmpfiles.rules = [
     "d /opt/kodama 0750 root root -"
     "d /root/.docker/cli-plugins 0700 root root -"
+    "d /var/lib/kodama-agent 0700 root root -"
     "L+ /root/.docker/cli-plugins/docker-compose - - - - ${compose}/libexec/docker/cli-plugins/docker-compose"
   ];
 
   environment.systemPackages = with pkgs; [ git curl openssl python3 bash ];
+
+  # Kodama's endpoint agent on this host, for network scans (kikai). Enrolled once by hand against the
+  # local edge, as niwa's install.sh does on NixOS:
+  #   curl -fsSL -o /var/lib/kodama-agent/kodama-agent http://127.0.0.1:54325/agent/v1/download/linux-x86_64
+  #   chmod 755 /var/lib/kodama-agent/kodama-agent
+  #   /var/lib/kodama-agent/kodama-agent enroll --relay http://127.0.0.1:54325 --token <token> --state /var/lib/kodama-agent
+  # Root, because scans need raw sockets. Waits for the enrolled state before it starts.
+  systemd.services.kodama-agent = {
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network-online.target" "docker.service" ];
+    wants = [ "network-online.target" ];
+    unitConfig.ConditionPathExists = "/var/lib/kodama-agent/kodama-agent";
+    serviceConfig = {
+      ExecStart = "/var/lib/kodama-agent/kodama-agent run --state /var/lib/kodama-agent";
+      Restart = "always";
+      RestartSec = 10;
+    };
+  };
 }
