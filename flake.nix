@@ -225,7 +225,7 @@
           { key = "homeassistant-wdc"; name = "WDC Home Assistant"; fullDomain = "ha.wdc.gmbh"; hostname = "10.20.10.18"; port = 80; healthPath = "/manifest.json"; }  # HAOS VM 318 cannot run newt; Pangolin SSO on until HA's own login is trusted
         ]; } ]; };  # WDC headscale (control plane only through Pangolin; devices peer over WireGuard; host is subnet router for VLAN 110)
       "svgwdc-web-01" = mkAppServer { name = "svgwdc-web-01"; services = [ ./modules/services/wd-web { nixit.ipv4 = "10.20.10.16/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # WD Gruppe websites, one port per company (LAN only until the domains are set)
-      "svgwdc-kdma-01" = mkAppServer { name = "svgwdc-kdma-01"; services = [ ./modules/services/kodama { nixit.ipv4 = "10.20.10.17/24"; nixit.gateway = "10.20.10.1"; } ]; };  # Kodama test instance (niwa compose, images from wsmdp-001)
+      "svgwdc-kdma-01" = mkAppServer { name = "svgwdc-kdma-01"; services = [ ./modules/services/kodama { nixit.ipv4 = "10.20.10.17/24"; nixit.gateway = "10.20.10.1"; nixit.nasStorage = { ip = "10.10.30.117"; mounts = [{ export = "/volume1/MDL/kodama-wdc"; mountPoint = "/srv/kodama-backup"; }]; }; } ]; };  # Kodama WD Consulting (niwa compose, released images from git.lua.li; backups on the MDL NAS)
       "svgwdc-dvls-01" = mkAppServer { name = "svgwdc-dvls-01"; services = [ ./modules/services/devolutions-server { nixit.ipv4 = "10.20.10.19/24"; nixit.gateway = "10.20.10.1"; nixit.newt.enable = false; } ]; };  # Devolutions Server for Remote Desktop Manager (LAN only, no Pangolin)
 
       # Not in this deploy batch — add IPs when you bring them up
