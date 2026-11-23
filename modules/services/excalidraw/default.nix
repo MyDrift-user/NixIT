@@ -5,7 +5,7 @@
 # Secret (sops secrets/common.yaml, key `excalidash/env`):
 #   JWT_SECRET=<openssl rand -hex 32>
 #   CSRF_SECRET=<openssl rand -hex 32>
-#   OIDC_CLIENT_SECRET=<= EXCALIDASH_CLIENT_SECRET in keycloak/env>
+#   OIDC_CLIENT_SECRET=<secret of the ExcaliDash client in Pocket ID>
 { config, ... }:
 let
   cfg = config.nixit;
@@ -34,9 +34,10 @@ in {
         NODE_ENV = "production";
         TRUST_PROXY = "true";                 # behind Pangolin
         AUTH_MODE = "oidc_enforced";
-        OIDC_PROVIDER_NAME = "Keycloak";
-        OIDC_ISSUER_URL = "${cfg.authUrl}/realms/${cfg.realm}";
-        OIDC_CLIENT_ID = "excalidash";
+        # Pocket ID only (owner, 2026-11-24); ExcaliDash takes a single provider.
+        OIDC_PROVIDER_NAME = "Pocket ID";
+        OIDC_ISSUER_URL = "https://my.auth.li";
+        OIDC_CLIENT_ID = "d59e381f-3b1b-4eca-a200-f9cc92a31792";
         OIDC_REDIRECT_URI = "${base}/api/auth/oidc/callback";  # verify path vs ExcaliDash docs
         FRONTEND_URL = base;
         BACKEND_URL = base;
