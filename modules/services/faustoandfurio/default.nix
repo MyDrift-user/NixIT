@@ -1,6 +1,6 @@
 # faustoandfurio.ch: WordPress + MariaDB, the stack from the faustoandfurio-wp repo
 # (docker-compose.yml) moved onto NixOS as is. docker/ is that repo's image context,
-# plus the bare-domain -> www redirect in security.conf.
+# plus the www -> bare-domain redirect in security.conf.
 #
 # Data: /srv/faustoandfurio/wp (WordPress files, uploads, plugins) and
 # /srv/faustoandfurio/db (MariaDB datadir). Secret: sops faustoandfurio/env with
@@ -51,8 +51,8 @@ in lib.mkMerge [ {
     "d /srv/faustoandfurio/db 0700 999 999 -"   # mysql in the mariadb image
   ];
 
-  # Public site: no Pangolin login. The bare domain is its own resource and Apache
-  # answers it with a 301 to www. blank.gif is static, so the check does not depend
+  # Public site: no Pangolin login. www is its own resource and Apache
+  # answers it with a 301 to the bare domain. blank.gif is static, so the check does not depend
   # on the Host header WordPress would canonicalise.
   nixit.pangolin.resources = [
     { key = "faustoandfurio-www"; name = "Fausto & Furio"; fullDomain = "www.faustoandfurio.ch"; port = 8088; sso = false; healthPath = "/wp-includes/images/blank.gif"; }
@@ -109,14 +109,14 @@ in lib.mkMerge [ {
   };
 })
 (lib.mkIf maintenance {
-  # The health path stays 200 so Pangolin keeps routing here; the bare domain still goes to www.
+  # The health path stays 200 so Pangolin keeps routing here; www still goes to the bare domain.
   services.nginx = {
     enable = true;
     virtualHosts.faustoandfurio-maintenance = {
       listen = [ { addr = "0.0.0.0"; port = 8088; } { addr = "[::]"; port = 8088; } ];
       root = ./maintenance;
       extraConfig = ''
-        if ($host = faustoandfurio.ch) { return 301 https://www.faustoandfurio.ch$request_uri; }
+        if ($host = www.faustoandfurio.ch) { return 301 https://faustoandfurio.ch$request_uri; }
         error_page 503 /index.html;
       '';
       locations."= /wp-includes/images/blank.gif".return = "200";
