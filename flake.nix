@@ -202,7 +202,8 @@
       "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw { nixit.ipv4 = "10.10.20.12/24"; nixit.pangolin.resources = [{ key = "excalidash"; name = "ExcaliDash"; fullDomain = "draw.lua.li"; port = 6767; sso = true; healthPath = "/health"; }]; } ]; };  # excalidash
       "svgmdl-game-01" = mkAppServer { name = "svgmdl-game-01"; services = [ ./modules/services/pelican    { nixit.ipv4 = "10.10.20.15/24"; nixit.pangolin.resources = [{ key = "pelican"; name = "Pelican"; fullDomain = "game.lua.li"; port = 8085; sso = true; healthPath = "/up"; }]; } ]; };  # pelican game panel
       "svgmdl-caro-01" = mkAppServer { name = "svgmdl-caro-01"; services = [ ./modules/services/caroli     { nixit.ipv4 = "10.10.20.19/24"; nixit.pangolin.resources = [
-        { key = "caroli"; name = "Maler Caroli"; fullDomain = "malercaroli.lua.li"; port = 8080; sso = false; healthPath = "/"; }  # public marketing site
+        # The site itself is served only as www.malercaroli.ch (Pangolin resource, root redirects there); owner removed
+        # malercaroli.lua.li on 2026-11-24.
         { key = "caro-db"; name = "Caroli Supabase"; fullDomain = "caro-db.lua.li"; port = 8000; sso = false; healthPath = "/auth/v1/health"; }  # self-hosted Supabase gateway (editor backend)
       ]; } ]; };  # caroli — site + self-hosted Supabase editor backend
 
