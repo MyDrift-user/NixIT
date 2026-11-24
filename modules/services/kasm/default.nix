@@ -62,6 +62,50 @@ in {
   };
 
   config = {
+    # Kasm runs from its vendor compose file, not from NixOS units. The fleet's daily
+    # `docker system prune --all` (modules/server/docker) deletes any Kasm container that is stopped
+    # at that moment, its image, the then unused kasm_sidecar_network, and every workspace image no
+    # session uses; restart: always cannot bring a deleted container or network back, and
+    # office.lua.li stayed at 503 until it was rebuilt by hand (2026-08-28, again 2026-11-24).
+    virtualisation.docker.autoPrune.enable = lib.mkForce false;
+
+    # Self-heal: on boot and every 15 minutes, recreate the sidecar network and any missing Kasm
+    # container with Kasm's own bin/start. Only runs bin/start when something is missing, because it
+    # pulls every image (Docker Hub rate limits).
+    systemd.services.kasm-ensure = {
+      description = "Recreate missing Kasm containers and network";
+      after = [ "docker.service" ];
+      requires = [ "docker.service" ];
+      path = [ config.virtualisation.docker.package pkgs.bash pkgs.coreutils pkgs.gnugrep pkgs.shadow ];
+      serviceConfig.Type = "oneshot";
+      script = ''
+        F=/opt/kasm/current/docker/docker-compose.yaml
+        [ -f "$F" ] || { echo "Kasm not installed"; exit 0; }
+        docker network inspect kasm_sidecar_network >/dev/null 2>&1 \
+          || docker network create --driver bridge --attachable kasm_sidecar_network
+        running=$(docker ps --format '{{.Names}}')
+        missing=""
+        for c in $(grep -oE 'container_name: kasm_[a-z_]+' "$F" | cut -d' ' -f2); do
+          echo "$running" | grep -qx "$c" || missing="$missing $c"
+        done
+        if [ -n "$missing" ]; then
+          echo "kasm: not running:$missing; starting"
+          /opt/kasm/current/bin/start
+          # newt reports a target healthy again only after a reconnect, so wait for the proxy and
+          # restart it; otherwise office.lua.li stays 503 although Kasm is back.
+          for _ in $(seq 1 36); do
+            ${pkgs.curl}/bin/curl -fsk -o /dev/null --max-time 5 https://127.0.0.1/api/__healthcheck && break
+            sleep 5
+          done
+          systemctl restart docker-newt.service || true
+        fi
+      '';
+    };
+    systemd.timers.kasm-ensure = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = { OnBootSec = "2min"; OnUnitActiveSec = "15min"; };
+    };
+
     networking.firewall.allowedTCPPorts = [ 443 8443 ];
     systemd.tmpfiles.rules = [ "d /opt/kasm 0750 root root -" ];
     sops.secrets."kasm/admin-password".sopsFile = ../../../secrets/common.yaml;
