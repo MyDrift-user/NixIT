@@ -32,6 +32,21 @@ in {
     };
   };
 
+  # LiveKit media from outside: the old Pangolin VPS 85.215.153.154 (VPSMDL-PANG-OLD) forwards 7881/tcp and
+  # 7882/udp through this tunnel (DNAT + masquerade there, /etc/nftables.conf), so LIVEKIT_NODE_IP is its address.
+  sops.secrets."lectorio/wg-key" = { sopsFile = ../../../secrets/common.yaml; };
+  networking.wireguard.interfaces.wg-livekit = {
+    ips = [ "10.99.33.2/30" ];
+    privateKeyFile = config.sops.secrets."lectorio/wg-key".path;
+    peers = [{
+      publicKey = "IkZXvdPeAmoFuQGGwpKUQgYdPtupMNQ/doVmjlibQWA=";
+      endpoint = "85.215.153.154:51820";
+      allowedIPs = [ "10.99.33.1/32" ];
+      persistentKeepalive = 25;
+    }];
+  };
+  networking.firewall.interfaces.wg-livekit = { allowedTCPPorts = [ 7881 ]; allowedUDPPorts = [ 7882 ]; };
+
   # The images are built here; the fleet-wide prune would drop them while the stack is down.
   virtualisation.docker.autoPrune.enable = pkgs.lib.mkForce false;
 
