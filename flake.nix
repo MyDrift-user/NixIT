@@ -127,9 +127,9 @@
 
     # Reachable IPs per host (deploy-rs connects here; bare hostnames don't resolve).
     deployIPs = {
-      "svgmdl-keyc-01" = "10.10.20.10"; "svgmdl-forg-01" = "10.10.20.11";
-      "svgmdl-exca-01" = "10.10.20.12"; "svgmdl-immi-01" = "10.10.20.13";
-      "svgmdl-kasm-01" = "10.10.20.14"; "svgmdl-game-01" = "10.10.20.15";
+      "svgmdl-keyc-01" = "10.10.20.10"; "svgmdl-forg-01" = "10.10.20.27";
+      "svgmdl-exca-01" = "10.10.20.29"; "svgmdl-immi-01" = "10.10.20.31";
+      "svgmdl-kasm-01" = "10.10.20.32"; "svgmdl-game-01" = "10.10.20.15";
       "svgmdl-outl-01" = "10.10.20.21"; "svgmdl-outl-02" = "10.10.20.22";
       "svgmdl-outl-03" = "10.10.20.23"; "svgwdc-pape-01" = "10.20.10.10";
       "svgmdl-devl-01" = "10.10.20.40"; "desktop"        = "10.10.20.41";
@@ -193,13 +193,13 @@
       # App servers — one service per VM; static IPs (no DHCP on server VLANs).
       #   MDL → 10.10.20.x (gw .1, VLAN 20) · WDC → 10.20.10.x (gw .1, VLAN 110)
       "svgmdl-keyc-01" = mkAppServer { name = "svgmdl-keyc-01"; services = [ ./modules/services/keycloak   { nixit.ipv4 = "10.10.20.10/24"; nixit.pangolin.resources = [{ key = "keycloak"; name = "Keycloak"; fullDomain = "mdl.auth.li"; port = 8080; sso = false; healthPath = "/realms/master"; }]; } ]; };  # keycloak (no Pangolin SSO — self-protects; required for OIDC token exchange)
-      "svgmdl-kasm-01" = mkAppServer { name = "svgmdl-kasm-01"; services = [ ./modules/services/kasm       { nixit.ipv4 = "10.10.20.14/24"; nixit.pangolin.resources = [{ key = "kasm"; name = "Kasm"; fullDomain = "office.lua.li"; port = 443; method = "https"; sso = false; healthPath = "/api/__healthcheck"; }]; } ]; };  # kasm (own auth)
-      "svgmdl-forg-01" = mkAppServer { name = "svgmdl-forg-01"; services = [ ./modules/services/forgejo    { nixit.ipv4 = "10.10.20.11/24"; nixit.pangolin.resources = [{ key = "forgejo"; name = "Forgejo"; fullDomain = "git.lua.li"; port = 3000; sso = false; healthPath = "/api/healthz"; }]; } ]; };  # forgejo (own auth)
+      "svgmdl-kasm-01" = mkAppServer { name = "svgmdl-kasm-01"; services = [ ./modules/services/kasm       { nixit.ipv4 = "10.10.20.32/24"; nixit.pangolin.resources = [{ key = "kasm"; name = "Kasm"; fullDomain = "office.lua.li"; port = 443; method = "https"; sso = false; healthPath = "/api/__healthcheck"; }]; } ]; };  # kasm (own auth)
+      "svgmdl-forg-01" = mkAppServer { name = "svgmdl-forg-01"; services = [ ./modules/services/forgejo    { nixit.ipv4 = "10.10.20.27/24"; nixit.pangolin.resources = [{ key = "forgejo"; name = "Forgejo"; fullDomain = "git.lua.li"; port = 3000; sso = false; healthPath = "/api/healthz"; }]; } ]; };  # forgejo (own auth)
       "svgmdl-outl-01" = mkAppServer { name = "svgmdl-outl-01"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.21/24"; nixit.pangolin.resources = [{ key = "outline-docs"; name = "Outline"; fullDomain = "docs.lua.li"; port = 3000; sso = false; healthPath = "/_health"; }]; } ]; };  # outline 1
       "svgmdl-outl-02" = mkAppServer { name = "svgmdl-outl-02"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.22/24"; nixit.outlineUrl = "https://idpa.mydrift.dev"; nixit.pangolin.resources = [{ key = "outline-idpa"; name = "Outline IDPA"; fullDomain = "idpa.mydrift.dev"; port = 3000; sso = false; healthPath = "/_health"; }]; } ]; };  # outline 2 → idpa.mydrift.dev (IDPA)
       "svgmdl-outl-03" = mkAppServer { name = "svgmdl-outl-03"; services = [ ./modules/services/outline    { nixit.ipv4 = "10.10.20.23/24"; } ]; };  # outline 3
-      "svgmdl-immi-01" = mkAppServer { name = "svgmdl-immi-01"; services = [ ./modules/services/immich     { nixit.ipv4 = "10.10.20.13/24"; nixit.pangolin.resources = [{ key = "immich"; name = "Immich"; fullDomain = "photos.lua.li"; port = 2283; sso = false; healthPath = "/api/server/ping"; }]; nixit.nasStorage = { ip = "10.10.30.13"; mounts = [{ export = "/volume1/MDL/immich"; mountPoint = "/var/lib/immich"; }]; }; } ]; };  # immich (own auth/OIDC; media on NAS)
-      "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw { nixit.ipv4 = "10.10.20.12/24"; nixit.pangolin.resources = [{ key = "excalidash"; name = "ExcaliDash"; fullDomain = "draw.lua.li"; port = 6767; sso = true; healthPath = "/health"; }]; } ]; };  # excalidash
+      "svgmdl-immi-01" = mkAppServer { name = "svgmdl-immi-01"; services = [ ./modules/services/immich     { nixit.ipv4 = "10.10.20.31/24"; nixit.pangolin.resources = [{ key = "immich"; name = "Immich"; fullDomain = "photos.lua.li"; port = 2283; sso = false; healthPath = "/api/server/ping"; }]; nixit.nasStorage = { ip = "10.10.30.31"; mounts = [{ export = "/volume1/MDL/immich"; mountPoint = "/var/lib/immich"; }]; }; } ]; };  # immich (own auth/OIDC; media on NAS)
+      "svgmdl-exca-01" = mkAppServer { name = "svgmdl-exca-01"; services = [ ./modules/services/excalidraw { nixit.ipv4 = "10.10.20.29/24"; nixit.pangolin.resources = [{ key = "excalidash"; name = "ExcaliDash"; fullDomain = "draw.lua.li"; port = 6767; sso = true; healthPath = "/health"; }]; } ]; };  # excalidash
       "svgmdl-game-01" = mkAppServer { name = "svgmdl-game-01"; services = [ ./modules/services/pelican    { nixit.ipv4 = "10.10.20.15/24"; nixit.pangolin.resources = [{ key = "pelican"; name = "Pelican"; fullDomain = "game.lua.li"; port = 8085; sso = true; healthPath = "/up"; }]; } ]; };  # pelican game panel
       "svgmdl-caro-01" = mkAppServer { name = "svgmdl-caro-01"; services = [ ./modules/services/caroli     { nixit.ipv4 = "10.10.20.19/24"; nixit.pangolin.resources = [
         # The site itself is served only as www.malercaroli.ch (Pangolin resource, root redirects there); owner removed
