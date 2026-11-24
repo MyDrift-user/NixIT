@@ -41,6 +41,14 @@
   ];
 
   security.auditd.enable = true;
+  # Rotate: without this auditd keeps one ever growing audit.log (the execve rule logs every process start);
+  # by 2026-11-24 it was 16 GB on svgmdl-caro-01 (disk full) and 183 GB on svgmdl-kasm-01.
+  # At most 5 x 100 MB per host.
+  security.auditd.settings = {
+    max_log_file = 100;
+    max_log_file_action = "rotate";
+    num_logs = 5;
+  };
   security.audit = {
     enable = true;
     rules = [
