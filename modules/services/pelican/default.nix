@@ -22,7 +22,7 @@ let
 in {
   virtualisation.oci-containers.containers = {
     pelican-panel = {
-      image = "ghcr.io/pelican-dev/panel:latest";    # pin a tag in production
+      image = "ghcr.io/pelican/panel:latest";    # pin a tag in production
       ports = [ "127.0.0.1:8085:80" ];               # HTTP -> Pangolin/newt (TLS at Pangolin)
       environment = {
         APP_URL       = "https://game.${cfg.serviceDomain}";
@@ -44,7 +44,7 @@ in {
     };
 
     pelican-wings = {
-      image = "ghcr.io/pelican-dev/wings:latest";    # pin a tag in production
+      image = "ghcr.io/pelican/wings:latest";    # pin a tag in production
       ports = [ "8080:8080" "2022:2022" ];           # daemon API/console + SFTP
       environment = {
         TZ            = "Europe/Zurich";
