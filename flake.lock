@@ -159,6 +159,22 @@
         "type": "github"
       }
     },
+    "lectorio": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1795484824,
+        "narHash": "sha256-APsGEECFym8gifN3x+QCom06HwJIysS21ZQGj5uLB/w=",
+        "owner": "MyDrift-user",
+        "repo": "lectorio",
+        "rev": "c39f73dcd389859dda1d6f33d618dc56f72a7919",
+        "type": "github"
+      },
+      "original": {
+        "owner": "MyDrift-user",
+        "repo": "lectorio",
+        "type": "github"
+      }
+    },
     "m3shapes": {
       "flake": false,
       "locked": {
@@ -224,6 +240,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1795234589,
+        "narHash": "sha256-f/VVvxf5RsQgWVhUtefoca5ktVg0DA2bnkMOcmSnozo=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2786a2a72088ecf32aea5b3ec52099e6a7cff78f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "quickshell": {
       "inputs": {
         "nixpkgs": [
@@ -253,11 +285,33 @@
         "disko": "disko",
         "helium": "helium",
         "home-manager": "home-manager",
+        "lectorio": "lectorio",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
+        "rumi": "rumi",
         "sops-nix": "sops-nix",
         "spicetify-nix": "spicetify-nix",
         "zen-browser": "zen-browser"
+      }
+    },
+    "rumi": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "dir": "installer/nix",
+        "lastModified": 1786617623,
+        "narHash": "sha256-oShiwF5Lr95zqCiM4z7+64dLi3JuDsvcx+G1FMBfk5w=",
+        "owner": "MyDrift-user",
+        "repo": "rumi",
+        "rev": "60cdddf68f7551e27334b81edcdf8587bae6b762",
+        "type": "github"
+      },
+      "original": {
+        "dir": "installer/nix",
+        "owner": "MyDrift-user",
+        "repo": "rumi",
+        "type": "github"
       }
     },
     "sops-nix": {

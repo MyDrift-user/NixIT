@@ -57,6 +57,7 @@
 
     # rumi agent — relay role (private flake, buildRustPackage)
     rumi.url = "github:MyDrift-user/rumi?dir=installer/nix";
+    lectorio = { url = "github:MyDrift-user/lectorio"; flake = false; };   # private; deploys need the gh token
 
   };
 
@@ -143,7 +144,7 @@
       "svgwdc-dvls-01" = "10.20.10.19";
       "svgmdl-eoff-01" = "10.10.20.24";
       "svgmdl-vwrd-01" = "10.10.20.25";
-      "svgmdl-fafu-01" = "10.10.20.26";
+      "svgmdl-fafu-01" = "10.10.20.26"; "svgmdl-lect-01" = "10.10.20.33";
     };
     mkNode = name: {
       hostname = deployIPs.${name} or name;
@@ -241,6 +242,7 @@
       ]; } ]; }; # rumi (MSP mgmt + customer + Headscale mesh, built on-VM)
       "svgmdl-eoff-01" = mkAppServer { name = "svgmdl-eoff-01"; services = [ ./modules/services/euro-office { nixit.ipv4 = "10.10.20.24/24"; } ]; };  # euro-office document engine (edit.lua.li) — Rumi document preview/edit
       "svgmdl-fafu-01" = mkAppServer { name = "svgmdl-fafu-01"; services = [ ./modules/services/faustoandfurio { nixit.ipv4 = "10.10.20.26/24"; } ]; };  # faustoandfurio.ch WordPress (www + root redirect)
+      "svgmdl-lect-01" = mkAppServer { name = "svgmdl-lect-01"; services = [ ./modules/services/lectorio { nixit.ipv4 = "10.10.20.33/24"; nixit.nasStorage = { ip = "10.10.30.33"; mounts = [{ export = "/volume1/MDL/lectorio"; mountPoint = "/mnt/nas-lectorio"; }]; }; } ]; };  # lectorio.space (compose stack, Pangolin SSO while testing)
       "svgmdl-vwrd-01" = mkAppServer { name = "svgmdl-vwrd-01"; services = [ ./modules/services/vaultwarden { nixit.ipv4 = "10.10.20.25/24"; } ]; };  # vaultwarden password server (vault.lua.li)
       "svgmdl-moni-01" = mkAppServer { name = "svgmdl-moni-01"; services = [ ./modules/services/monitoring { nixit.ipv4 = "10.10.20.18/24"; nixit.pangolin.resources = [{ key = "gatus"; name = "Status"; fullDomain = "status.lua.li"; port = 8080; sso = false; healthPath = "/health"; hostname = "127.0.0.1"; }]; networking.interfaces.eth1.ipv4.addresses = [{ address = "10.10.10.30"; prefixLength = 24; }]; networking.interfaces.eth2.ipv4.addresses = [{ address = "10.10.30.30"; prefixLength = 24; }]; networking.interfaces.eth3.ipv4.addresses = [{ address = "10.20.10.30"; prefixLength = 24; }]; } ]; }; # monitoring — Gatus; multi-homed eth0=vlan20/eth1=vlan10/eth2=vlan30/eth3=vlan110 so probes reach every VLAN
       "svgmdl-fipa-01" = mkAppServer { name = "svgmdl-fipa-01"; services = [ ./modules/services/freeipa  { nixit.newt.enable = false; } ]; }; # FreeIPA
@@ -301,6 +303,7 @@
       "svgmdl-eoff-01" = mkNode "svgmdl-eoff-01";
       "svgmdl-vwrd-01" = mkNode "svgmdl-vwrd-01";
       "svgmdl-fafu-01" = mkNode "svgmdl-fafu-01";
+      "svgmdl-lect-01" = mkNode "svgmdl-lect-01";
       "svgmdl-exca-01" = mkNode "svgmdl-exca-01";
       "svgmdl-alia-01" = mkNode "svgmdl-alia-01";
       "svgmdl-game-01" = mkNode "svgmdl-game-01";
