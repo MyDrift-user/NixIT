@@ -78,11 +78,11 @@ in {
     timerConfig = { OnCalendar = "*-*-* 03:30"; Persistent = true; };
   };
 
-  # Site and app are public, the app has its own sign-in (owner, 2026-11-25). The stack's nginx splits
+  # All names are public, the app has its own sign-in (owner, 2026-11-25). The stack's nginx splits
   # by Host (www -> 301 apex, app.* = the app). robots.txt is static and answers on every host.
   nixit.pangolin.resources = [
     { key = "lectorio"; name = "Lectorio"; fullDomain = "lectorio.space"; port = 8480; sso = false; healthPath = "/robots.txt"; }
-    { key = "lectorio-www"; name = "Lectorio (www)"; fullDomain = "www.lectorio.space"; port = 8480; sso = true; healthPath = "/robots.txt"; }
+    { key = "lectorio-www"; name = "Lectorio (www)"; fullDomain = "www.lectorio.space"; port = 8480; sso = false; healthPath = "/robots.txt"; }
     { key = "lectorio-app"; name = "Lectorio App"; fullDomain = "app.lectorio.space"; port = 8480; sso = false; healthPath = "/robots.txt"; }
   ];
 }
