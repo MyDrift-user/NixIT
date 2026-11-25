@@ -162,11 +162,11 @@
     "lectorio": {
       "flake": false,
       "locked": {
-        "lastModified": 1795573068,
-        "narHash": "sha256-I+ZD1IuYJoYRdJ1tAZDn4X9vxH60vpIuiy5ehrMgfOs=",
+        "lastModified": 1795624672,
+        "narHash": "sha256-HfHTT1eOKroDAU75jlIKoKohbaj/nJ9myMuwwqP+d1A=",
         "owner": "MyDrift-user",
         "repo": "lectorio",
-        "rev": "88cc1f4129e0e0967a1403178c5880f56ce23be0",
+        "rev": "7069902882901e1225c99cea6d763e5399164479",
         "type": "github"
       },
       "original": {
