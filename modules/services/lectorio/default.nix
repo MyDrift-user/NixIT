@@ -9,7 +9,10 @@ let
   src = inputs.lectorio;
   docker = "${config.virtualisation.docker.package}/bin/docker";
   envFile = config.sops.secrets."lectorio/env".path;
-  compose = "${docker} compose -p lectorio -f ${src}/docker-compose.yml --env-file ${envFile}";
+  # Built from a copy: every file in the store is dated 1970, so cargo's kept target folder takes changed
+  # code as unchanged and the image gets the old binary. The copy has fresh dates.
+  build = "/var/lib/lectorio/src";
+  compose = "${docker} compose -p lectorio -f ${build}/docker-compose.yml --env-file ${envFile}";
   backupDir = "/mnt/nas-lectorio";
 in {
   sops.secrets."lectorio/env" = {
@@ -27,6 +30,11 @@ in {
       Type = "oneshot";
       RemainAfterExit = true;
       TimeoutStartSec = "1h";   # first start builds the Rust API and the Angular app
+      StateDirectory = "lectorio";
+      ExecStartPre = [
+        "${pkgs.coreutils}/bin/rm -rf ${build}"
+        "${pkgs.coreutils}/bin/cp -rT ${src} ${build}"
+      ];
       ExecStart = "${compose} up -d --build --remove-orphans";
       ExecStop = "${compose} down";
     };
