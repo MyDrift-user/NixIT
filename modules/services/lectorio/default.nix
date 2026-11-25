@@ -11,8 +11,52 @@ let
   envFile = config.sops.secrets."lectorio/env".path;
   # Built from a copy: every file in the store is dated 1970, so cargo's kept target folder takes changed
   # code as unchanged and the image gets the old binary. The copy has fresh dates.
-  build = "/var/lib/lectorio/src";
+  state = "/var/lib/lectorio";
+  build = "${state}/src";
   compose = "${docker} compose -p lectorio -f ${build}/docker-compose.yml --env-file ${envFile}";
+
+  # A new version (reload): the images are built under another name while the old stack serves, then the
+  # changed containers are recreated. A failed build, a live session or a failed dump ends it before anything
+  # running is touched; after fixing the cause: systemctl reload lectorio.
+  update = pkgs.writeShellScript "lectorio-update" ''
+    set -euo pipefail
+    export PATH=${pkgs.lib.makeBinPath [ pkgs.coreutils pkgs.diffutils pkgs.util-linux config.virtualisation.docker.package ]}:$PATH
+    next=${state}/src.next
+    idle() {
+      live=$(docker exec lectorio-db-1 psql -U lectorio -d lectorio -Atc 'select count(*) from sessions where ended_at is null')
+      [ "$live" = 0 ] || { echo "a session is running live ($live), nothing changed"; exit 1; }
+    }
+    running=; docker container inspect lectorio-db-1 > /dev/null 2>&1 && running=1
+    [ -z "$running" ] || idle
+    rm -rf $next
+    cp -rT ${src} $next
+    docker compose -p lectorio-next -f $next/docker-compose.yml --env-file ${envFile} build
+    if [ -n "$running" ]; then
+      mountpoint -q ${backupDir} || { echo "${backupDir} is not mounted, nothing changed"; exit 1; }
+      mkdir -p ${backupDir}/predeploy
+      dump=${backupDir}/predeploy/update-$(date +%F-%H%M%S).dump
+      (umask 077; docker exec lectorio-db-1 pg_dump -U lectorio -Fc lectorio > $dump.tmp)
+      mv $dump.tmp $dump
+      idle
+    fi
+    for s in api shot web; do docker tag lectorio-next-$s:latest lectorio-$s:latest; done
+    cmp -s $next/garage.toml ${build}/garage.toml && garage= || garage=1
+    rm -rf ${build}
+    mv $next ${build}
+    echo ${src} > ${state}/version
+    web=$(docker container inspect -f '{{.Id}}' lectorio-web-1 2> /dev/null || true)
+    # First on its own: it ignores the stop signal, and the site would wait ten seconds for it.
+    [ -z "$running" ] || ${compose} up -d --no-build --no-deps -t 1 shot
+    ${compose} up -d --no-build --remove-orphans
+    [ -z "$garage" ] || ${compose} up -d --no-build --no-deps --force-recreate garage
+    # nginx looks the API's address up once, at its start.
+    [ "$web" != "$(docker container inspect -f '{{.Id}}' lectorio-web-1)" ] || docker exec lectorio-web-1 nginx -s reload
+  '';
+  # A start (boot) brings up the version that last ran; only the first one builds.
+  start = pkgs.writeShellScript "lectorio-start" ''
+    [ -e ${state}/version ] || exec ${update}
+    exec ${compose} up -d --no-build --remove-orphans
+  '';
   backupDir = "/mnt/nas-lectorio";
 in {
   sops.secrets."lectorio/env" = {
@@ -25,17 +69,14 @@ in {
     requires = [ "docker.service" ];
     wants = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
-    restartTriggers = [ src ];
+    reloadIfChanged = true;   # never a stop: an update is the reload
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      TimeoutStartSec = "1h";   # first start builds the Rust API and the Angular app
+      TimeoutStartSec = "1h";   # the build of the Rust API and the Angular app
       StateDirectory = "lectorio";
-      ExecStartPre = [
-        "${pkgs.coreutils}/bin/rm -rf ${build}"
-        "${pkgs.coreutils}/bin/cp -rT ${src} ${build}"
-      ];
-      ExecStart = "${compose} up -d --build --remove-orphans";
+      ExecStart = start;
+      ExecReload = update;
       ExecStop = "${compose} down";
     };
   };
